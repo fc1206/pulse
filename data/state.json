@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "block_cursor": 0,
+  "status_cursor": 0,
+  "status_batch": 8,
+  "emphasis_per_run": 2,
+  "coverage_stale_days": 18,
+  "last_run": "",
+  "last_runner": "",
+  "coverage": {}
+}

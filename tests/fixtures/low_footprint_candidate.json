@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Low-Footprint Test Co",
+    "domain": "https://www.lowprofile-regression.example/",
+    "tier": "2",
+    "cluster": "data-intel",
+    "status": "active",
+    "stage": "bootstrapped",
+    "hq": "Somewhere, XX",
+    "founded": "2020",
+    "what": "A real competitor in adjacent vocabulary with no press footprint and a social-only launch",
+    "why_tier": "Same customer promise in different vocabulary; the class the radar exists to catch",
+    "evidence_url": "https://www.lowprofile-regression.example/",
+    "notes": "Regression fixture: the harness must accept and register low-footprint, wrong-vocabulary candidates"
+  }
+]

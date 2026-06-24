@@ -1,0 +1,4 @@
+# Dev/test dependencies only. The runtime (scripts/) is stdlib-only by design —
+# the scheduled scan runs on bare python3 with nothing installed. Keep it that way.
+# Reproduce the test env from a fresh clone:  pip install -r requirements-dev.txt
+pytest==9.1.1

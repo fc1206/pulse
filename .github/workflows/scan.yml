@@ -1,0 +1,124 @@
+name: scan
+on:
+  schedule:
+    - cron: "0 14 * * 1,4"   # Mon + Thu 14:00 UTC ≈ 7am PT — adjust to your timezone
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: radar-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RADAR_TOKEN || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run /scan via Claude Code CLI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude -p "/scan" \
+            --model "${{ vars.SCAN_MODEL || 'claude-sonnet-4-6' }}" \
+            --dangerously-skip-permissions \
+            --verbose
+
+      - name: Post-run health check (catch silent degradation)
+        run: |
+          latest=$(ls -d runs/*/ 2>/dev/null | sort | tail -1)
+          if [ -z "$latest" ]; then
+            echo "::error::no run directory produced — scan did not run"; exit 1
+          fi
+          python3 scripts/check_run_health.py --run-dir "${latest%/}" --expect-date "$(basename "$latest")"
+
+      - name: Render HTML report
+        run: python3 scripts/render_report.py
+
+      - name: Publish scan results (direct push; PR fallback if rules require)
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
+        run: |
+          git config user.name "radar-bot"
+          git config user.email "radar-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes produced by this scan."; exit 0
+          fi
+          DATE=$(date -u +%F)
+          git commit -m "scan: ${DATE} (github)"
+          if git push origin HEAD:main; then
+            echo "Pushed directly to main."; exit 0
+          fi
+          echo "Direct push rejected — falling back to PR flow."
+          BRANCH="scan/${DATE}-$(date -u +%H%M%S)"
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
+          {
+            echo "Automated radar scan ${DATE}."
+            echo
+            echo '```'
+            tail -n 12 data/SCANLOG.md
+            echo '```'
+            LATEST=$(ls -d runs/*/ 2>/dev/null | sort | tail -1)
+            if [ -n "$LATEST" ] && [ -f "${LATEST}ESCALATION.md" ]; then
+              echo; echo "## ⚠ ESCALATION"; echo; cat "${LATEST}ESCALATION.md"
+            fi
+          } > /tmp/pr_body.md
+          gh pr create --base main --head "$BRANCH" --title "scan: ${DATE}" --body-file /tmp/pr_body.md
+          gh pr merge "$BRANCH" --squash --delete-branch \
+            || gh pr merge "$BRANCH" --squash --delete-branch --auto \
+            || echo "::warning::Scan PR left open — repo rules require manual merge. Merge promptly to keep scans linear."
+
+      - name: Email report
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: python3 scripts/send_report.py || echo "::warning::email send failed (scan itself succeeded)"
+
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python3 scripts/notify_slack.py || echo "::warning::slack notify failed (scan itself succeeded)"
+
+      - name: Heartbeat — scan alive (dead-man switch)
+        env:
+          HEARTBEAT_URL: ${{ secrets.HEARTBEAT_URL }}
+        run: python3 scripts/heartbeat.py --status success || echo "::warning::heartbeat failed (scan itself succeeded)"
+
+      - name: Open issue on new Tier 1
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
+        run: |
+          latest=$(ls -d runs/*/ 2>/dev/null | sort | tail -1)
+          if [ -n "$latest" ] && [ -f "${latest}ESCALATION.md" ]; then
+            if [ "$(basename $latest)" = "$(date -u +%F)" ]; then
+              gh issue create --title "⚠ Radar: new Tier-1 competitor ($(date -u +%F))" --body-file "${latest}ESCALATION.md"
+            fi
+          fi
+
+      - name: Flag failed run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
+        run: gh issue create --title "Radar scan FAILED ($(date -u +%F))" --body "The scheduled scan did not complete. Check the Actions log. A silent radar is a blind radar — fix before the next cycle." || true
+
+      - name: Heartbeat — signal failure (dead-man switch)
+        if: failure()
+        env:
+          HEARTBEAT_URL: ${{ secrets.HEARTBEAT_URL }}
+        run: python3 scripts/heartbeat.py --status fail || true
