@@ -1,6 +1,9 @@
 # Pulse
 
-**Keep your finger on your market's pulse.** A competitor radar you **own** — a small repo + Claude that scans the web on a schedule, maintains a deduped, tiered database of your competitors, and tells you **what changed and what to do about it**. Runs in Claude Code (or any assistant that can run the `/scan` command); schedules itself twice a week with GitHub Actions for a few dollars a month.
+> ### 🤖 Just forked this? Open it in **Claude Code** or **Codex** and say *"onboard me"* (or run `/onboard`).
+> The agent sets everything up **in chat** — a 10-minute interview, your first scan, and a branded report — and makes every file edit for you. The only thing you ever do by hand is paste an API key into a GitHub web page, and only if you want it to run on autopilot. **No terminal, no YAML.**
+
+**Keep your finger on your market's pulse.** A competitor radar you **own** — a small repo + an AI agent that scans the web on a schedule, maintains a deduped, tiered database of your competitors, and tells you **what changed and what to do about it**. Runs in Claude Code, Codex, or any assistant that can run the `/scan` command; schedules itself twice a week with GitHub Actions for a few dollars a month.
 
 _Built by the team at [Astell](https://astell.space)._
 
@@ -16,12 +19,13 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 
 ## Quick start
 
-1. **Use this template** (fork / "Use this template" on GitHub). Set `ANTHROPIC_API_KEY` (and optionally `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`) as repo secrets.
-2. **Teach it your market.** Two options:
-   - **Fast (~15 min):** run `/setup` in Claude Code. It interviews you about your product and competitors and writes `config/context.md`, `config/rubric.md`, `config/queries.md`, and a seed registry for you.
-   - **Manual (~an afternoon):** fill in those three config files yourself. They are the strategy brain — the sharper they are, the sharper the output. `config/context.md` is the highest-leverage file.
-3. **Run a scan:** `/scan` in Claude Code. It searches, scores against your rubric, merges into the registry, writes the digest, and renders the report.
-4. **Put it on autopilot (optional):** the included GitHub Actions workflow can run the scan twice a week, commit the results, and (if configured) post the digest to Slack. **Scheduling ships OFF** so a fresh fork doesn't fail before it has a key — once `ANTHROPIC_API_KEY` is set and your first `/scan` looks good, **uncomment the `schedule:` block** at the top of `.github/workflows/scan.yml` (adjust the cron) to go live.
+**The easy way (recommended):** "Use this template" on GitHub → open your new repo in **Claude Code** or **Codex** → say *"onboard me"* (or run `/onboard`). The agent interviews you, runs your first scan, and shows you a branded report — all in chat, no files touched. You only add an API key (one GitHub web page) when you want it to run on autopilot.
+
+**Prefer to drive it yourself?**
+1. **Use this template** (fork on GitHub).
+2. **Teach it your market** — run `/setup` (a ~10-min interview that writes `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, and a seed registry) or fill those files in by hand. `config/context.md` is the highest-leverage file: the sharper the lane, the sharper the brief.
+3. **Run a scan:** `/scan` — searches, scores against your rubric, merges into the registry, writes the digest, and renders `data/report.html`.
+4. **Autopilot (optional):** add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets and variables → Actions), then **uncomment the `schedule:` block** in `.github/workflows/scan.yml`. **Scheduling ships OFF** so a fresh fork never fails before it has a key. Optional: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.
 
 ## How it stays trustworthy
 

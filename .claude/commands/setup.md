@@ -14,14 +14,17 @@ Gather enough to write a strong `config/context.md` and `config/rubric.md`:
 4. **What's the wrong-vocabulary version of you?** The kind of company that sells your promise in different words and is easy to miss. (This becomes the canonical "don't miss this" calibration example — the whole reason the radar exists.)
 5. **Vocabulary + markets.** The category terms buyers use, and any non-US regions worth watching.
 6. **Your standing reads** (optional but valuable): any market theses you already hold — consolidation, what's commoditizing, where the puck is going.
+7. **Brand** (for the report they read + share): their company name, and a primary accent color if they have one (hex, or just describe it — default flame `#fc4b32`). Optional: an emoji or logo URL, and light vs dark.
 
-If the user is unsure on the rubric axes, infer sensible ones from their product description and confirm.
+If the user is unsure on the rubric axes, infer sensible ones from their product description and confirm. The lane axes (Q2) double as the competitive map's axes — write them into `config/axes.json` (`x_axis`/`y_axis` labels) so the map reads in their language.
 
 ## 2. Generate the config (write these files)
 
 - **`config/context.md`** — fill every section from the interview: what you do, pillars (the lane axes), standing reads, the actionability bar (keep the 2–8-week framing), and current known threats (the names from Q3).
 - **`config/rubric.md`** — write tier definitions relative to *their* product, and replace the cluster set with the meaningful sub-groups of their market. **If you change the clusters, update the `CLUSTERS` enum in `scripts/validate_merge.py` and the cluster list in `CLAUDE.md` to match** (they must agree or the merge will reject rows). Write real calibration examples using the competitors from Q3 — especially the wrong-vocabulary one from Q4.
 - **`config/queries.md`** — replace `{competitor}`, `{category}`, `{your-product}` placeholders with their actual terms. Keep all blocks (A–I) and the two-lane structure; Block F (always-on), H (regional), and I (edge-expansion) are the recall safety net — never trim them. Leave the tuning log empty for them to grow.
+- **`config/brand.json`** — set `company` to their company name, `accent` (and `accent_2` if they gave one), `logo` (emoji or image URL, if any), and `theme` (`light` default, or `dark`). This brands the report, digest, and emails — the first thing they see.
+- **`config/axes.json`** — set the `x_axis`/`y_axis` `label`/`low`/`high` to their lane's two most decisive axes (from Q2) so the competitive map reads in their market's language, not the software-AI defaults. Tune the signal keyword lists if you have time; the defaults are a reasonable start.
 
 ## 3. Seed the registry (optional but recommended)
 
@@ -37,5 +40,8 @@ Turn the known competitors from Q3 into the first registry rows so the radar sta
 ## 4. Verify + hand off
 
 - Run `pip install -r requirements-dev.txt && pytest -q` — all green.
-- Tell the user what was written, show the seed count, and point them to next steps: run `/scan` for a full sweep, and set repo secrets (`ANTHROPIC_API_KEY`, optional `SLACK_WEBHOOK_URL` / `HEARTBEAT_URL`) + adjust the cron in `.github/workflows/scan.yml` to put it on autopilot.
-- Remind them: `config/context.md` is the highest-leverage file — keep it current as their strategy moves, or the digest goes stale.
+- Tell the user what was written and show the seed count. Then run `/scan` for a full sweep (you run it for them — no key needed) and `python3 scripts/render_report.py && open data/report.html` to show the branded deliverable.
+- **Autopilot — the GUI-only key step.** To schedule it, they add their Anthropic key as a GitHub **secret** — a web page, never a terminal or editor. Build their exact deep link from `git remote get-url origin`:
+  `https://github.com/<owner>/<repo>/settings/secrets/actions/new?name=ANTHROPIC_API_KEY`
+  Tell them: open it → paste the key from console.anthropic.com → click **Add secret**. Then **you** uncomment the `schedule:` block in `.github/workflows/scan.yml` for them. (Optional secrets: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.)
+- Remind them: `config/context.md` is the highest-leverage file — keep it current as their strategy moves, or the digest goes stale. Keep the repo **private** if their competitor set is sensitive.

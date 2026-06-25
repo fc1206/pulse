@@ -2,7 +2,7 @@
 
 A competitor-landscape radar. Runs `/scan` on a schedule to catch every new or repositioning competitor. Built to be executed by ANY model — all judgment is narrowly scoped, all plumbing is deterministic.
 
-First-time setup: run `/setup` to generate `config/context.md`, `config/rubric.md`, `config/queries.md`, and a seed registry for your market (or fill them in by hand).
+**First-time setup:** run `/onboard` — it interviews the owner, captures their brand, runs the first scan, and shows them the report, all in chat (it calls `/setup` internally and does every edit for them; the owner may be non-technical). Or run `/setup` alone to just (re)generate `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, and a seed registry.
 
 ## Hard rules (non-negotiable, any model)
 
@@ -40,7 +40,10 @@ First-time setup: run `/setup` to generate `config/context.md`, `config/rubric.m
 - `config/rubric.md` — tier definitions + calibration examples
 - `config/context.md` — strategy frame the digest is judged against (the highest-leverage file)
 - `config/digest-spec.md` — the anti-slop digest contract
+- `config/brand.json` — name, company, accent color, theme for the report/digest deliverable
+- `config/axes.json` — the competitive map's axes + scoring signals (Frank/owner-editable)
 - `data/registry.csv` — system of record, append-mostly
 - `data/LANDSCAPE.md` — narrative map + changelog
-- `.claude/commands/scan.md` — the run procedure
+- `.claude/commands/onboard.md` — one-command first-run onboarding (calls /setup + /scan, GUI-only key step)
 - `.claude/commands/setup.md` — first-time market configuration
+- `.claude/commands/scan.md` — the run procedure
