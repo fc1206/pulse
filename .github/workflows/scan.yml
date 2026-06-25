@@ -1,7 +1,11 @@
 name: scan
 on:
-  schedule:
-    - cron: "0 14 * * 1,4"   # Mon + Thu 14:00 UTC ≈ 7am PT — adjust to your timezone
+  # Scheduling is OFF in the template on purpose: a fresh fork has no ANTHROPIC_API_KEY
+  # yet, so a cron scan would just fail twice a week (and file a noisy "scan FAILED" issue).
+  # Once you've run /setup and added the ANTHROPIC_API_KEY secret
+  # (Settings → Secrets and variables → Actions), uncomment the schedule below to go live.
+  # schedule:
+  #   - cron: "0 14 * * 1,4"   # Mon + Thu 14:00 UTC ≈ 7am PT — adjust to your timezone
   workflow_dispatch: {}
 
 permissions:
@@ -31,6 +35,10 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set. Add it under Settings → Secrets and variables → Actions, then re-run. (The schedule stays off until you do — see the triggers at the top of this file.)"
+            exit 1
+          fi
           npm install -g @anthropic-ai/claude-code
           claude -p "/scan" \
             --model "${{ vars.SCAN_MODEL || 'claude-sonnet-4-6' }}" \

@@ -21,7 +21,7 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
    - **Fast (~15 min):** run `/setup` in Claude Code. It interviews you about your product and competitors and writes `config/context.md`, `config/rubric.md`, `config/queries.md`, and a seed registry for you.
    - **Manual (~an afternoon):** fill in those three config files yourself. They are the strategy brain — the sharper they are, the sharper the output. `config/context.md` is the highest-leverage file.
 3. **Run a scan:** `/scan` in Claude Code. It searches, scores against your rubric, merges into the registry, writes the digest, and renders the report.
-4. **Put it on autopilot (optional):** the included GitHub Actions workflow runs the scan twice a week, commits the results, and (if configured) posts the digest to Slack. Adjust the cron in `.github/workflows/scan.yml`.
+4. **Put it on autopilot (optional):** the included GitHub Actions workflow can run the scan twice a week, commit the results, and (if configured) post the digest to Slack. **Scheduling ships OFF** so a fresh fork doesn't fail before it has a key — once `ANTHROPIC_API_KEY` is set and your first `/scan` looks good, **uncomment the `schedule:` block** at the top of `.github/workflows/scan.yml` (adjust the cron) to go live.
 
 ## How it stays trustworthy
 
