@@ -1,0 +1,62 @@
+{
+  "_doc": "Axis config for the competitive map. Frank-editable. A fork's /setup overwrites this for its own market. score_axes.py reads it; positions are computed, never hand-placed. Keys in *_up/*_down are regexes (case-insensitive) matched against what+why_tier.",
+  "x_axis": {
+    "label": "breadth",
+    "low": "point tool",
+    "high": "whole-company context layer"
+  },
+  "y_axis": {
+    "label": "action",
+    "low": "retrieves / answers",
+    "high": "acts / executes"
+  },
+  "x_cluster_base": {
+    "incumbent": 70,
+    "direct": 68,
+    "chief-of-staff": 50,
+    "employee-assist": 46,
+    "infra": 42,
+    "data-intel": 36,
+    "vertical": 28
+  },
+  "x_default_base": 45,
+  "x_up": {
+    "company brain|context layer|whole[- ]company|org(anization)?[- ]wide|across (the )?(your )?(entire )?(company|org)": 14,
+    "cross[- ]tool|every (work )?tool|all (your|company) tools|across .{0,12}(saas|work) tools": 12,
+    "\\b(100|150|200|400|1000|4000|6000|10,?000)\\+?\\b|50\\+ (connectors|integrations|tools)|connectors? (across|to)": 9,
+    "knowledge graph|context graph|work graph|enterprise search": 6
+  },
+  "x_down": {
+    "\\b(email|inbox)\\b|meeting (notes|assistant|intelligence)|notetaker|scheduling|calendar": 14,
+    "warehouse|\\bsql\\b|\\bbi\\b|semantic layer|data catalog|analytics|dashboards?": 12,
+    "ticket|helpdesk|\\bitsm\\b|\\besm\\b|customer (support|service)|cx\\b": 10,
+    "market intel|finance docs|commerce|outward[- ]facing": 10
+  },
+  "x_up_cap": 28,
+  "x_down_cap": 30,
+  "y_cluster_base": {
+    "direct": 44,
+    "employee-assist": 44,
+    "incumbent": 42,
+    "chief-of-staff": 40,
+    "infra": 34,
+    "vertical": 32,
+    "data-intel": 30
+  },
+  "y_default_base": 36,
+  "y_up": {
+    "take(s)? action|acts? (across|on)|\\bexecut|autonomous(ly)?|complete(s)? (work|tasks)|does (the )?work|run(s)? (scheduled|ops|operations|the )": 17,
+    "\\bagent(s|ic)?\\b|multi[- ]agent|orchestrat": 10,
+    "workflow|automat(e|ion)|read[- ](and[- ])?write|write action|builds? (dashboards|apps|internal)": 10,
+    "proactiv|open[- ]loop|follow[- ]through|assigns? owners?|tracks? (commitments|decisions|to completion)": 9
+  },
+  "y_down": {
+    "notetaker|note[- ]taking|meeting (notes|assistant)": 12,
+    "\\bdashboards?\\b|\\bbi\\b|analytics|reporting|insights": 9,
+    "catalog|lineage|metadata|semantic layer": 9
+  },
+  "y_up_cap": 34,
+  "y_down_cap": 24,
+  "clamp_lo": 8,
+  "clamp_hi": 96
+}
