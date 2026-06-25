@@ -40,10 +40,11 @@ jobs:
             exit 1
           fi
           npm install -g @anthropic-ai/claude-code
+          set -o pipefail   # without this, the tee pipe would mask a claude failure as success
           claude -p "/scan" \
             --model "${{ vars.SCAN_MODEL || 'claude-sonnet-4-6' }}" \
             --dangerously-skip-permissions \
-            --verbose
+            --verbose 2>&1 | tee /tmp/scan.log
 
       - name: Post-run health check (catch silent degradation)
         run: |
@@ -119,11 +120,34 @@ jobs:
             fi
           fi
 
+      - name: Close stale failure alerts (this scan succeeded)
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
+        run: |
+          # A successful scan resolves any past "Radar scan FAILED" alert — don't let a
+          # transient blip (usually API-credit exhaustion) linger as a false live failure.
+          for n in $(gh issue list --state open --search 'Radar scan FAILED in:title' --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Auto-closed: scan succeeded on $(date -u +%F). The earlier failure was transient." || true
+          done
+
       - name: Flag failed run
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
-        run: gh issue create --title "Radar scan FAILED ($(date -u +%F))" --body "The scheduled scan did not complete. Check the Actions log. A silent radar is a blind radar — fix before the next cycle." || true
+        run: |
+          DATE=$(date -u +%F)
+          # Classify the failure — credit exhaustion is the #1 real cause and is NOT a code bug.
+          REASON="The scheduled scan did not complete. Check the Actions log."
+          if grep -qi 'credit balance is too low' /tmp/scan.log 2>/dev/null; then
+            REASON="**API credit balance exhausted** — the Anthropic account ran out of credits, so the scan model never ran (not a code bug). Top up / enable auto-reload on the Anthropic account, then re-dispatch the scan."
+          fi
+          # De-dupe: comment on the existing open alert rather than stacking a new issue each cycle.
+          existing=$(gh issue list --state open --search 'Radar scan FAILED in:title' --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again ${DATE}. ${REASON}" || true
+          else
+            gh issue create --title "Radar scan FAILED (${DATE})" --body "${REASON} A silent radar is a blind radar — fix before the next cycle." || true
+          fi
 
       - name: Heartbeat — signal failure (dead-man switch)
         if: failure()

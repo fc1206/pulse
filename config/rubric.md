@@ -37,6 +37,7 @@ Precision is about what gets *registered*, never about what gets *considered* �
 
 - **Prefer primary evidence:** the company's own site, its YC / Crunchbase / LinkedIn page, or a named funding announcement. Listicles and "top 10" roundups are lead generation only — use them to find names, then verify against a primary source before registering.
 - **Lift the exact domain** from the funding-DB / press page rather than guessing a homepage.
+- **Founding year ≠ batch / funding / launch year.** Record `founded` only from an explicit founding-year source (about page, Crunchbase / LinkedIn "Founded", incorporation record). Never infer it from a YC batch label (**F25 ≠ founded 2025**), a first-funding date, an OSS-project launch, or a rebrand year — this conflation is the most common error in this class of registry. No primary founding-year source → record `unknown` (honest beats wrong).
 - **Thin / unverifiable but plausible → `watch-unconfirmed`** in `run_meta.json` notes, not a registry row. No live evidence URL, no entry.
 - **Region is not a tier signal.** Score on mechanics only.
 

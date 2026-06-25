@@ -23,7 +23,12 @@ STATUSES = {"active", "acquired", "dead", "feature"}
 REQUIRED = ["name", "domain", "tier", "cluster", "status", "stage", "hq", "founded", "what", "why_tier", "evidence_url"]
 FIELDNAMES = ["domain", "name", "tier", "cluster", "status", "stage", "hq", "founded",
               "first_seen", "last_checked", "what", "why_tier", "evidence_url", "notes"]
-UPDATABLE = {"tier", "cluster", "status", "stage", "what", "why_tier", "evidence_url", "notes"}
+# `founded` and `hq` are corrigible factual fields, not identity: data-entry errors
+# (conflating a YC batch / first-funding / launch year with the founding year; recording
+# a founder's city as HQ when the company is elsewhere) and relocations are common and
+# are legitimate corrections the canonical writer should accept without a hand-edit. Only
+# identity fields (domain, name) and system timestamps (first_seen, last_checked) stay off-limits.
+UPDATABLE = {"tier", "cluster", "status", "stage", "founded", "hq", "what", "why_tier", "evidence_url", "notes"}
 ALWAYS_BLOCK = "F"  # always-run recall safety-net block; stamped in the coverage ledger every run
 
 
@@ -99,19 +104,23 @@ def main():
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--root", default=".")
     ap.add_argument("--runner", default="local")
+    ap.add_argument("--corrections-only", action="store_true",
+                    help="apply status_updates as out-of-band data corrections: write the registry "
+                         "and a correction-tagged changelog/scanlog entry, but do NOT add candidates, "
+                         "advance scan cursors, or stamp coverage. Use for accuracy fixes between scans.")
     args = ap.parse_args()
 
     # --- single canonical writer guard (divergence prevention) ---
-    # Only the canonical runner (CI) may write the system of record. An automatic
-    # non-CI run writing here creates divergent git histories that can silently drop
-    # entries on the next reconcile. Intentional local maintenance opts in explicitly
-    # (and `git pull` first).
+    # Only GitHub Actions (the canonical runner) may write the system of record. An
+    # automatic non-CI run writing here can fork the registry into divergent lineages
+    # that silently lose competitors. Intentional local maintenance must opt in
+    # explicitly (and `git pull` first).
     if not os.environ.get("GITHUB_ACTIONS") and os.environ.get("RADAR_ALLOW_WRITE") != "1":
         sys.exit(
             "REFUSING TO WRITE: not the canonical runner (GitHub Actions).\n"
-            "Automatic non-CI runs must not write the registry — parallel writers create\n"
-            "divergent histories that silently drop entries. GitHub Actions is the sole writer.\n"
-            "For an intentional, pull-first local run, set RADAR_ALLOW_WRITE=1."
+            "Automatic non-CI runs must not write the registry — that can fork it into\n"
+            "divergent lineages and silently lose competitors. GitHub Actions is the sole\n"
+            "writer. For an intentional, pull-first local run, set RADAR_ALLOW_WRITE=1."
         )
 
     root, run_dir = Path(args.root), Path(args.run_dir)
@@ -127,6 +136,10 @@ def main():
     meta = load_json(run_dir / "run_meta.json", default={})
 
     errs = validate_candidates(cands, set(by_domain)) + validate_updates(ups, by_domain)
+    if args.corrections_only and cands:
+        errs.append("--corrections-only run must not add candidates; new companies go through a scan, not a correction batch")
+    if args.corrections_only and not ups:
+        errs.append("--corrections-only run needs at least one status_update")
     if errs:
         print("VALIDATION FAILED — fix and re-run:\n  - " + "\n  - ".join(errs))
         sys.exit(1)
@@ -173,49 +186,60 @@ def main():
             lines += [f"## MOVED TO TIER 1: {name}", f"- {summary}", ""]
         (run_dir / "ESCALATION.md").write_text("\n".join(lines), encoding="utf-8")
 
-    # --- changelog + last-scan stamp in LANDSCAPE.md ---
+    # --- changelog (+ last-scan stamp, scans only) in LANDSCAPE.md ---
     land_path = root / "data/LANDSCAPE.md"
     land = land_path.read_text(encoding="utf-8")
-    entry = [f"### {run_date} — scan ({args.runner})"]
+    kind = "correction" if args.corrections_only else "scan"
+    entry = [f"### {run_date} — {kind} ({args.runner})"]
     if new_t1:
         entry.append("**⚠ NEW TIER 1:** " + ", ".join(f"{r['name']} ({r['domain']})" for r in new_t1))
     if added:
         entry.append("Added: " + "; ".join(f"{r['name']} (T{r['tier']}, {r['cluster']})" for r in added))
     if updated:
-        entry.append("Updated: " + "; ".join(f"{n} — {s}" for n, s in updated))
-    if not added and not updated:
+        entry.append(("Corrected: " if args.corrections_only else "Updated: ")
+                     + "; ".join(f"{n} — {s}" for n, s in updated))
+    if not added and not updated and not args.corrections_only:
         entry.append("No new companies, no material status changes. Blocks swept: "
                      + ", ".join(meta.get("emphasized_blocks", [])) + ".")
     land = land.replace("## Changelog\n", "## Changelog\n\n" + "\n".join(entry) + "\n", 1)
-    land = re.sub(r"\*\*Last scan:\*\* .*", f"**Last scan:** {run_date} ({args.runner}) · **Tracked:** {len(rows)} companies", land, count=1)
+    if not args.corrections_only:  # a correction is not a scan — don't move the scan watermark
+        land = re.sub(r"\*\*Last scan:\*\* .*", f"**Last scan:** {run_date} ({args.runner}) · **Tracked:** {len(rows)} companies", land, count=1)
     land_path.write_text(land, encoding="utf-8")
 
     # --- scan log (append-only; every run logs, including zero-find runs) ---
     with (root / "data/SCANLOG.md").open("a", encoding="utf-8") as f:
-        f.write(f"\n## {run_date} ({args.runner})\n"
-                f"- Queries run: {len(meta.get('queries_run', []))} "
-                f"(blocks: {', '.join(meta.get('emphasized_blocks', ['?']))} + F + wildcards)\n"
-                f"- Candidates evaluated: {meta.get('candidates_evaluated', len(cands))}; "
-                f"net-new added: {len(added)}; status updates: {len(updated)}\n"
-                f"- Escalations: {len(new_t1) + len(tier1_updates)}\n")
+        if args.corrections_only:
+            f.write(f"\n## {run_date} — correction ({args.runner})\n"
+                    f"- Out-of-band accuracy corrections: {len(updated)} rows. "
+                    f"No scan; cursors/coverage untouched.\n")
+        else:
+            f.write(f"\n## {run_date} ({args.runner})\n"
+                    f"- Queries run: {len(meta.get('queries_run', []))} "
+                    f"(blocks: {', '.join(meta.get('emphasized_blocks', ['?']))} + F + wildcards)\n"
+                    f"- Candidates evaluated: {meta.get('candidates_evaluated', len(cands))}; "
+                    f"net-new added: {len(added)}; status updates: {len(updated)}\n"
+                    f"- Escalations: {len(new_t1) + len(tier1_updates)}\n")
         if meta.get("notes"):
             f.write(f"- Notes: {meta['notes']}\n")
 
-    # --- advance cursors (only on success) ---
-    st_path = root / "data/state.json"
-    st = json.loads(st_path.read_text(encoding="utf-8"))
-    st["block_cursor"] = st.get("block_cursor", 0) + st.get("emphasis_per_run", 2)
-    st["status_cursor"] = st.get("status_cursor", 0) + st.get("status_batch", 8)
-    st["last_run"], st["last_runner"] = run_date, args.runner
-    # --- coverage ledger: stamp the blocks this run actually swept (emphasized + always-on F) ---
-    cov = st.get("coverage", {})
-    for b in list(meta.get("emphasized_blocks", [])) + [ALWAYS_BLOCK]:
-        cov[str(b)] = run_date
-    st["coverage"] = cov
-    st_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
+    # --- advance cursors + stamp coverage (scans only; a correction must not move the scheduler) ---
+    if not args.corrections_only:
+        st_path = root / "data/state.json"
+        st = json.loads(st_path.read_text(encoding="utf-8"))
+        st["block_cursor"] = st.get("block_cursor", 0) + st.get("emphasis_per_run", 2)
+        st["status_cursor"] = st.get("status_cursor", 0) + st.get("status_batch", 8)
+        st["last_run"], st["last_runner"] = run_date, args.runner
+        # coverage ledger: stamp the blocks this run actually swept (emphasized + always-on F)
+        cov = st.get("coverage", {})
+        for b in list(meta.get("emphasized_blocks", [])) + [ALWAYS_BLOCK]:
+            cov[str(b)] = run_date
+        st["coverage"] = cov
+        st_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
 
-    print(f"MERGED: +{len(added)} companies, {len(updated)} updates, "
-          f"{len(new_t1) + len(tier1_updates)} escalations. Registry now {len(rows)} rows.")
+    verb = "CORRECTED" if args.corrections_only else "MERGED"
+    print(f"{verb}: +{len(added)} companies, {len(updated)} updates, "
+          f"{len(new_t1) + len(tier1_updates)} escalations. Registry now {len(rows)} rows."
+          + (" (cursors/coverage untouched)" if args.corrections_only else ""))
 
 
 if __name__ == "__main__":

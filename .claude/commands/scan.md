@@ -24,9 +24,11 @@ From results, collect candidate companies — actual companies with domains, not
 
 For each net-new candidate: WebFetch its homepage (or its YC/press page if the site is JS-empty). Confirm it's real and what it does. Score per `config/rubric.md` — mechanics over vocabulary, higher tier when torn. Only Tier 1/2 candidates and notable Tier 3 (funded infra in our pillars) go in `candidates.json`. Unverifiable-but-plausible → `run_meta.json` notes as `watch-unconfirmed`.
 
-## 4. Status sweep (≤8 WebSearch calls)
+**Metadata discipline (the registry's accuracy depends on this):** lift `founded`/`stage`/`hq` from a **primary** source, never an aggregator guess or the most salient year on the page. `founded` is the *incorporation* year — **not** the YC batch (F25 ≠ 2025), first-funding, OSS-launch, or rebrand year. Founding-year conflation is the most common data-entry error in this class of registry. No primary founding-year source → write `unknown`.
 
-One query per `status_target` (template at the bottom of `config/queries.md`). Material changes only → `status_updates.json`. No change → nothing.
+## 4. Status sweep + field re-audit (≤8 WebSearch calls)
+
+One query per `status_target` (template at the bottom of `config/queries.md`). Two jobs per target: **(a) material events** — funding round, acquisition, shutdown, pivot toward/away from the lane; **(b) field correctness** — while the primary source is open, confirm `founded`/`stage`/`hq` against it. Either a material change *or* a confirmed field error → `status_updates.json`. This is the **only correctness re-audit the registry gets** — write-once ingest means a wrong field is otherwise never caught. No change → nothing.
 
 ## 5. Write outputs
 
