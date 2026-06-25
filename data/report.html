@@ -3,7 +3,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap');
 body{margin:0;background:#f4f1ea;padding:24px;}
-.pb{--flame:#fc4b32;--ink:#20201c;--mut:#8d877c;--line:#efe7dd;--card:#fff;
+.pb{--flame:#fc4b32;--ink:#20201c;--mut:#6f6a60;--line:#efe7dd;--card:#fff;
  background:radial-gradient(125% 70% at 50% -8%,rgba(252,75,50,0.07) 0%,#faf1ea 32%,#f8f7f4 100%);
  font-family:'Geist','Inter',-apple-system,sans-serif;color:var(--ink);border-radius:18px;padding:30px 32px 36px;max-width:1120px;margin:0 auto;}
 .pb *{box-sizing:border-box;}
@@ -26,7 +26,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .pills{display:flex;gap:7px;flex-wrap:wrap;}
 .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;border:1px solid transparent;}
 .pf{background:rgba(252,75,50,0.1);color:#fc4b32;border-color:rgba(252,75,50,0.1);}.pa{background:#fdf1da;color:#8a6a1e;border-color:#f4e2bf;}.ps{background:#eef0f2;color:#586170;border-color:#e2e5e9;}.pn{background:#f4f1ec;color:#6f6a60;border-color:#e8e3da;}
-.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
+.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;color:inherit;text-decoration:none;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
 .mav{width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;}
 .av1{background:rgba(252,75,50,0.1);color:#fc4b32;}.av2{background:#fdf1da;color:#8a6a1e;}
 .cmeta{flex:1;min-width:0;}.cname{font-weight:500;font-size:13.5px;}.csub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -42,11 +42,14 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .map{position:relative;height:500px;margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#fff,#fdfbf8);box-shadow:0 1px 2px rgba(40,28,12,.04),0 22px 46px -32px rgba(40,28,12,.24);}
 .qv{position:absolute;left:50%;top:6%;bottom:6%;width:1px;background:#ece6dc;}.qh{position:absolute;top:50%;left:5%;right:5%;height:1px;background:#ece6dc;}
 .qtr{position:absolute;left:50%;top:0;width:50%;height:50%;background:linear-gradient(225deg,rgba(252,75,50,0.1),rgba(255,255,255,0));}
-.ql{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#c3bcb0;z-index:1;}
-.ql.tr{right:16px;top:14px;color:#cf6a52;}.ql.tl{left:118px;top:14px;}.ql.bl{left:118px;bottom:32px;}.ql.br{right:16px;bottom:32px;}
-.axx{position:absolute;left:90px;right:20px;bottom:11px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b3ada3;}
-.axy{position:absolute;left:8px;top:50%;transform:translateY(-50%) rotate(-90deg);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b3ada3;white-space:nowrap;}
-.bub{position:absolute;transform:translate(0,-50%);display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(255,255,255,.86);border:1px solid transparent;cursor:default;transition:box-shadow .12s,background .12s;}
+.ql{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6a5d50;z-index:1;}
+.ql.tr{right:16px;top:14px;color:#fc4b32;}.ql.tl{left:118px;top:14px;}.ql.bl{left:118px;bottom:32px;}.ql.br{right:16px;bottom:32px;}
+.axx{position:absolute;left:90px;right:20px;bottom:11px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#696157;}
+.axy{position:absolute;left:8px;top:50%;transform:translateY(-50%) rotate(-90deg);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#696157;white-space:nowrap;}
+.fd{position:absolute;width:6px;height:6px;border-radius:50%;transform:translate(-50%,-50%);opacity:.34;pointer-events:none;}.fd1{background:#fc4b32;}.fd2{background:#2f6df0;}
+.mapmore{position:absolute;left:16px;bottom:13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a8478;}
+.bub{position:absolute;transform:translate(0,-50%);display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid transparent;cursor:pointer;color:inherit;text-decoration:none;transition:box-shadow .12s,background .12s;}
+.bub:focus-visible{outline:2px solid #fc4b32;outline-offset:2px;}
 .bub:hover{background:#fff;border-color:var(--line);box-shadow:0 8px 22px -10px rgba(40,28,12,.34);z-index:20;}
 .bd{width:11px;height:11px;border-radius:50%;flex:none;}.bd1{background:#fc4b32;box-shadow:0 0 0 3.5px rgba(252,75,50,0.1);}.bd2{background:#2f6df0;box-shadow:0 0 0 3.5px rgba(47,109,240,0.13);}
 .bl{font-size:11.5px;font-weight:500;white-space:nowrap;}
@@ -93,15 +96,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
   <div class="col"><div class="card"><p class="body">No companies yet — run a scan.</p></div></div>
 </div>
 
-<div class="mapwrap">
-  <div class="eyebrow">The competitive map</div>
-  <h1 style="font-size:24px;margin:7px 0 4px">Where every competitor actually sits.</h1>
-  <p class="sub" style="font-size:14px">Positions are scored, not hand-placed — point tool→whole-company context layer × retrieves / answers→acts / executes. Hover any company.</p>
-  <div class="map" id="pmap"><div class="qtr"></div><div class="qv"></div><div class="qh"></div>
-    <div class="ql tr">convergence</div><div class="ql tl">acts / executes · narrow</div><div class="ql bl">narrow / retrieves / answers</div><div class="ql br">broad</div>
-    <div class="axx">point tool&nbsp;&nbsp;───→&nbsp;&nbsp;whole-company context layer</div><div class="axy">retrieves / answers&nbsp;───→&nbsp;acts / executes</div>
-  </div>
-</div>
+
 
 <div class="sec"><div class="eyebrow" style="color:#fc4b32">What changed &amp; what to do · </div><div class="dgquiet">No digest yet — run a scan to generate your first decision brief.</div></div>
 
@@ -115,10 +110,12 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </div>
 <script>
 (function(){
- var data=[],map=document.getElementById('pmap');
- function build(){var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
-  var ns=data.map(function(d){return {d:d,x:(50+(d.x-50)*0.62)/100*W,y:(50-(d.y-50)*0.64)/100*H};});
-  ns.forEach(function(n){var b=document.createElement('div');b.className='bub';
+ var named=[],faint=[],map=document.getElementById('pmap');
+ function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
+ function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
+  faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
+  var ns=named.map(function(d){return {d:d,x:PX(d,W),y:PY(d,H)};});
+  ns.forEach(function(n){var b=document.createElement('a');b.className='bub';b.href='https://'+n.d.d;b.target='_blank';b.rel='noopener';b.setAttribute('aria-label',n.d.n+' — Tier '+n.d.t);
    b.innerHTML='<span class="bd bd'+n.d.t+'"></span><span class="bl">'+n.d.n+'</span><div class="tip"><div class="tn">'+n.d.n+' <span class="tchip t'+n.d.t+'">T'+n.d.t+'</span></div><div class="tm">'+n.d.m+'</div><div class="tw">'+n.d.w+'</div></div>';
    map.appendChild(b);n.el=b;n.w=b.offsetWidth;n.h=b.offsetHeight;});
   for(var it=0;it<120;it++){for(var i=0;i<ns.length;i++)for(var j=i+1;j<ns.length;j++){

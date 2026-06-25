@@ -12,12 +12,15 @@ import argparse
 import csv
 import html
 import json
+import math
 import os
 import re
 from datetime import date
 from pathlib import Path
 
 import score_axes  # sibling in scripts/; computes the map coordinates
+
+FRONTIER_K = 8  # the map NAMES only the K competitors nearest the convergence corner; the rest are a density field
 
 DEFAULT_BRAND = {
     "product": os.environ.get("RADAR_TITLE", "Pulse"),
@@ -129,31 +132,30 @@ def threat_top(landscape, n=5):
     return [md_inline(esc_ks(i)) for i in items]
 
 
-def map_data(rows, root):
+def map_data(rows, root, run_date):
+    """The Frontier: rank every active Tier-1/2 by distance to the top-right (convergence)
+    corner; NAME the K nearest, render the rest as a faint tier-coloured density field.
+    Exactly K labels exist regardless of registry size, so the static render never collides."""
     try:
         cfg = score_axes.load_config(root, None)
-        out, xa, ya = [], None, None
-        # Map the direct lane (active Tier-1) — the decision-relevant set, kept legible.
-        # Fall back to T1+T2 if there are very few Tier-1s.
-        t1 = [r for r in rows if r.get("status") == "active" and r.get("tier") == "1"]
-        keep_t2 = len(t1) < 6
+        pts = []
         for r in rows:
-            if r.get("status") != "active":
-                continue
-            if r.get("tier") == "2" and not keep_t2:
-                continue
-            if r.get("tier") not in ("1", "2"):
+            if r.get("status") != "active" or r.get("tier") not in ("1", "2"):
                 continue
             b, a = score_axes.score_row(r, cfg)
             meta = " · ".join(p for p in [r.get("stage", ""), parse_funding(r.get("what", ""), r.get("notes", "")),
                               r.get("hq", ""), (("est. " + r["founded"]) if r.get("founded") not in ("", "unknown") else "")]
                               if p and p != "unknown")
-            out.append({"n": r["name"], "t": int(r["tier"]), "x": b, "y": a,
-                        "m": meta, "w": (r.get("what", "") or "")[:130]})
-        cfg2 = score_axes.load_config(root, None)
-        return out, cfg2["x_axis"], cfg2["y_axis"]
+            pts.append({"n": r["name"], "d": r["domain"], "t": int(r["tier"]), "x": b, "y": a,
+                        "m": meta, "w": (r.get("what", "") or "")[:130],
+                        "new": 1 if r.get("first_seen") == run_date else 0})
+        # rank by proximity to convergence corner; deterministic tie-break (tier → name)
+        pts.sort(key=lambda p: (round(math.hypot(100 - p["x"], 100 - p["y"]), 2), p["t"], p["n"]))
+        named = pts[:FRONTIER_K]
+        faint = [{"x": p["x"], "y": p["y"], "t": p["t"]} for p in pts[FRONTIER_K:]]
+        return named, faint, len(faint), cfg["x_axis"], cfg["y_axis"]
     except Exception:
-        return [], {"low": "narrow", "high": "broad"}, {"low": "retrieves", "high": "acts"}
+        return [], [], 0, {"low": "narrow", "high": "broad"}, {"low": "retrieves", "high": "acts"}
 
 
 def render(root, out):
@@ -199,9 +201,9 @@ def render(root, out):
         sub = " · ".join(p for p in [r.get("stage", "").replace("series-", "Series ").title() if r.get("stage") else "",
                          fund, (("est. " + r["founded"]) if r.get("founded") not in ("", "unknown") else r.get("hq", ""))] if p)
         newt = ' <span class="pill pf" style="padding:1px 7px;font-size:9px">New</span>' if r["name"] in new_names else ""
-        crows += (f'<div class="crow"><div class="mav {av}">{esc(r["name"][0])}</div>'
+        crows += (f'<a class="crow" href="https://{esc(r["domain"])}" target="_blank" rel="noopener"><div class="mav {av}">{esc(r["name"][0])}</div>'
                   f'<div class="cmeta"><div class="cname">{esc(r["name"])}{newt}</div>'
-                  f'<div class="csub">{esc(sub)}</div></div><span class="tchip {chip}">T{esc(t)}</span></div>')
+                  f'<div class="csub">{esc(sub)}</div></div><span class="tchip {chip}">T{esc(t)}</span></a>')
 
     # ---- spotlight ----
     sp = pick_spotlight(rows, run_date)
@@ -232,7 +234,7 @@ def render(root, out):
                     f'<a href="https://{esc(sp["domain"])}" target="_blank" rel="noopener">{esc(sp["domain"])}</a> — product site</div>')
         sp_html = f"""<div class="card">
         <div class="rb"><div class="pills"><span class="pill {tchip}">Tier {esc(sp["tier"])}</span><span class="pill ps">{esc(clu)}</span></div><span class="lab">tracked</span></div>
-        <div class="stitle">{esc(sp["name"])} — {esc(title)}</div>
+        <div class="stitle"><a href="https://{esc(sp["domain"])}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">{esc(sp["name"])}</a> — {esc(title)}</div>
         <div class="lab" style="margin-top:2px">{esc(sp["domain"])}</div>
         <div class="tiles"><div class="tile"><div class="lab">Funding</div><div class="tv">{esc(fund)}</div></div>
         <div class="tile"><div class="lab">Stage</div><div class="tv">{esc((sp.get("stage","") or "—").replace("series-","Series ").title())}</div></div>
@@ -243,8 +245,21 @@ def render(root, out):
         <ul class="steps">{steps_html}</ul>
         <div class="lab" style="margin:18px 0 6px">Evidence</div>{ev_html}</div>"""
 
-    # ---- map ----
-    md, xa, ya = map_data(rows, root)
+    # ---- map (Frontier) ----
+    named, faint, nfaint, xa, ya = map_data(rows, root, run_date)
+    morechip = f'<div class="mapmore">+{nfaint} more racing in</div>' if nfaint else ""
+    map_section = ""
+    if named or faint:
+        map_section = (
+            '<div class="mapwrap"><div class="eyebrow">The competitive map</div>'
+            '<h1 style="font-size:24px;margin:7px 0 4px">Everyone is racing to the same corner.</h1>'
+            f'<p class="sub" style="font-size:14px">Scored, not hand-placed — {esc(xa["low"])}→{esc(xa["high"])} × {esc(ya["low"])}→{esc(ya["high"])}. '
+            f'The {len(named)} nearest the corner are named; the rest are the field. Hover any dot.</p>'
+            '<div class="map" id="pmap"><div class="qtr"></div><div class="qv"></div><div class="qh"></div>'
+            '<div class="ql tr">convergence</div>'
+            f'<div class="ql tl">{esc(ya["high"])} · narrow</div><div class="ql bl">narrow · {esc(ya["low"])}</div><div class="ql br">broad</div>'
+            f'<div class="axx">{esc(xa["low"])}&nbsp;&nbsp;───→&nbsp;&nbsp;{esc(xa["high"])}</div>'
+            f'<div class="axy">{esc(ya["low"])}&nbsp;───→&nbsp;{esc(ya["high"])}</div>{morechip}</div></div>')
 
     # ---- digest section ----
     ddate, ditems = digest_items(digest)
@@ -295,8 +310,8 @@ def render(root, out):
         "XLABELS": xlabels, "NALL": str(len(rows)), "NT1": str(len(tiers["1"])),
         "NT2": str(len(tiers["2"])), "NNEW": str(len(new_rows)), "CROWS": crows,
         "SPOTLIGHT": sp_html or '<div class="card"><p class="body">No companies yet — run a scan.</p></div>',
-        "MAPDATA": json.dumps(md, ensure_ascii=False),
-        "XLO": esc(xa["low"]), "XHI": esc(xa["high"]), "YLO": esc(ya["low"]), "YHI": esc(ya["high"]),
+        "MAPSECTION": map_section,
+        "MAPDATA": json.dumps(named, ensure_ascii=False), "FAINT": json.dumps(faint, ensure_ascii=False),
         "DDATE": esc(ddate or run_date), "DIGEST": dg_html, "TABLE": table_rows,
         "THREATS": "".join(f"<li>{t}</li>" for t in threat_top(landscape)) or "<li>No threat read yet.</li>",
         "REPOFOOT": repo_foot, "PRODUCT": esc(product),
@@ -312,7 +327,7 @@ TEMPLATE = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap');
 body{margin:0;background:#f4f1ea;padding:24px;}
-.pb{--flame:{{ACCENT}};--ink:#20201c;--mut:#8d877c;--line:#efe7dd;--card:#fff;
+.pb{--flame:{{ACCENT}};--ink:#20201c;--mut:#6f6a60;--line:#efe7dd;--card:#fff;
  background:radial-gradient(125% 70% at 50% -8%,{{ACCSOFT2}} 0%,#faf1ea 32%,#f8f7f4 100%);
  font-family:'Geist','Inter',-apple-system,sans-serif;color:var(--ink);border-radius:18px;padding:30px 32px 36px;max-width:1120px;margin:0 auto;}
 .pb *{box-sizing:border-box;}
@@ -335,7 +350,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .pills{display:flex;gap:7px;flex-wrap:wrap;}
 .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;border:1px solid transparent;}
 .pf{background:{{ACCSOFT}};color:{{ACCENT}};border-color:{{ACCSOFT}};}.pa{background:#fdf1da;color:#8a6a1e;border-color:#f4e2bf;}.ps{background:#eef0f2;color:#586170;border-color:#e2e5e9;}.pn{background:#f4f1ec;color:#6f6a60;border-color:#e8e3da;}
-.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
+.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;color:inherit;text-decoration:none;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
 .mav{width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;}
 .av1{background:{{ACCSOFT}};color:{{ACCENT}};}.av2{background:#fdf1da;color:#8a6a1e;}
 .cmeta{flex:1;min-width:0;}.cname{font-weight:500;font-size:13.5px;}.csub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -351,11 +366,14 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .map{position:relative;height:500px;margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#fff,#fdfbf8);box-shadow:0 1px 2px rgba(40,28,12,.04),0 22px 46px -32px rgba(40,28,12,.24);}
 .qv{position:absolute;left:50%;top:6%;bottom:6%;width:1px;background:#ece6dc;}.qh{position:absolute;top:50%;left:5%;right:5%;height:1px;background:#ece6dc;}
 .qtr{position:absolute;left:50%;top:0;width:50%;height:50%;background:linear-gradient(225deg,{{ACCSOFT}},rgba(255,255,255,0));}
-.ql{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#c3bcb0;z-index:1;}
-.ql.tr{right:16px;top:14px;color:#cf6a52;}.ql.tl{left:118px;top:14px;}.ql.bl{left:118px;bottom:32px;}.ql.br{right:16px;bottom:32px;}
-.axx{position:absolute;left:90px;right:20px;bottom:11px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b3ada3;}
-.axy{position:absolute;left:8px;top:50%;transform:translateY(-50%) rotate(-90deg);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b3ada3;white-space:nowrap;}
-.bub{position:absolute;transform:translate(0,-50%);display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(255,255,255,.86);border:1px solid transparent;cursor:default;transition:box-shadow .12s,background .12s;}
+.ql{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6a5d50;z-index:1;}
+.ql.tr{right:16px;top:14px;color:{{ACCENT}};}.ql.tl{left:118px;top:14px;}.ql.bl{left:118px;bottom:32px;}.ql.br{right:16px;bottom:32px;}
+.axx{position:absolute;left:90px;right:20px;bottom:11px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#696157;}
+.axy{position:absolute;left:8px;top:50%;transform:translateY(-50%) rotate(-90deg);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#696157;white-space:nowrap;}
+.fd{position:absolute;width:6px;height:6px;border-radius:50%;transform:translate(-50%,-50%);opacity:.34;pointer-events:none;}.fd1{background:{{ACCENT}};}.fd2{background:{{ACC2}};}
+.mapmore{position:absolute;left:16px;bottom:13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a8478;}
+.bub{position:absolute;transform:translate(0,-50%);display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid transparent;cursor:pointer;color:inherit;text-decoration:none;transition:box-shadow .12s,background .12s;}
+.bub:focus-visible{outline:2px solid {{ACCENT}};outline-offset:2px;}
 .bub:hover{background:#fff;border-color:var(--line);box-shadow:0 8px 22px -10px rgba(40,28,12,.34);z-index:20;}
 .bd{width:11px;height:11px;border-radius:50%;flex:none;}.bd1{background:{{ACCENT}};box-shadow:0 0 0 3.5px {{ACC1DOT}};}.bd2{background:{{ACC2}};box-shadow:0 0 0 3.5px {{ACC2DOT}};}
 .bl{font-size:11.5px;font-weight:500;white-space:nowrap;}
@@ -402,15 +420,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
   <div class="col">{{SPOTLIGHT}}</div>
 </div>
 
-<div class="mapwrap">
-  <div class="eyebrow">The competitive map</div>
-  <h1 style="font-size:24px;margin:7px 0 4px">Where every competitor actually sits.</h1>
-  <p class="sub" style="font-size:14px">Positions are scored, not hand-placed — {{XLO}}→{{XHI}} × {{YLO}}→{{YHI}}. Hover any company.</p>
-  <div class="map" id="pmap"><div class="qtr"></div><div class="qv"></div><div class="qh"></div>
-    <div class="ql tr">convergence</div><div class="ql tl">{{YHI}} · narrow</div><div class="ql bl">narrow / {{YLO}}</div><div class="ql br">broad</div>
-    <div class="axx">{{XLO}}&nbsp;&nbsp;───→&nbsp;&nbsp;{{XHI}}</div><div class="axy">{{YLO}}&nbsp;───→&nbsp;{{YHI}}</div>
-  </div>
-</div>
+{{MAPSECTION}}
 
 <div class="sec"><div class="eyebrow" style="color:{{ACCENT}}">What changed &amp; what to do · {{DDATE}}</div>{{DIGEST}}</div>
 
@@ -424,10 +434,12 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </div>
 <script>
 (function(){
- var data={{MAPDATA}},map=document.getElementById('pmap');
- function build(){var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
-  var ns=data.map(function(d){return {d:d,x:(50+(d.x-50)*0.62)/100*W,y:(50-(d.y-50)*0.64)/100*H};});
-  ns.forEach(function(n){var b=document.createElement('div');b.className='bub';
+ var named={{MAPDATA}},faint={{FAINT}},map=document.getElementById('pmap');
+ function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
+ function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
+  faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
+  var ns=named.map(function(d){return {d:d,x:PX(d,W),y:PY(d,H)};});
+  ns.forEach(function(n){var b=document.createElement('a');b.className='bub';b.href='https://'+n.d.d;b.target='_blank';b.rel='noopener';b.setAttribute('aria-label',n.d.n+' — Tier '+n.d.t);
    b.innerHTML='<span class="bd bd'+n.d.t+'"></span><span class="bl">'+n.d.n+'</span><div class="tip"><div class="tn">'+n.d.n+' <span class="tchip t'+n.d.t+'">T'+n.d.t+'</span></div><div class="tm">'+n.d.m+'</div><div class="tw">'+n.d.w+'</div></div>';
    map.appendChild(b);n.el=b;n.w=b.offsetWidth;n.h=b.offsetHeight;});
   for(var it=0;it<120;it++){for(var i=0;i<ns.length;i++)for(var j=i+1;j<ns.length;j++){
