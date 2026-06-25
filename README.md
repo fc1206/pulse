@@ -2,6 +2,8 @@
 
 > ### 🤖 Just forked this? Open it in **Claude Code** or **Codex** and say *"onboard me"* (or run `/onboard`).
 > The agent sets everything up **in chat** — a 10-minute interview, your first scan, and a branded report — and makes every file edit for you. The only thing you ever do by hand is paste an API key into a GitHub web page, and only if you want it to run on autopilot. **No terminal, no YAML.**
+>
+> **Not technical?** Read **[USING-PULSE.md](USING-PULSE.md)** — the plain-English guide: what you get, the 15-minute setup, and what it costs *you* (it's free; you pay only your own AI usage, ~$5–15/mo on autopilot or nothing if you run it by hand).
 
 **Keep your finger on your market's pulse.** A competitor radar you **own** — a small repo + an AI agent that scans the web on a schedule, maintains a deduped, tiered database of your competitors, and tells you **what changed and what to do about it**. Runs in Claude Code, Codex, or any assistant that can run the `/scan` command; schedules itself twice a week with GitHub Actions for a few dollars a month.
 
