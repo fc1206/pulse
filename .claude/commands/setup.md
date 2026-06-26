@@ -40,7 +40,7 @@ Turn the known competitors from Q3 into the first registry rows so the radar sta
 ## 4. Verify + hand off
 
 - Run `pip install -r requirements-dev.txt && pytest -q` — all green.
-- Tell the user what was written and show the seed count. Then run `/scan` for a full sweep (you run it for them — no key needed) and `python3 scripts/render_report.py && open data/report.html` to show the branded deliverable.
+- Tell the user what was written and show the seed count. Then run `/scan` for a full sweep (you run it for them — no key needed) and `python3 scripts/render_report.py` to build the branded deliverable at `data/report.html` — show it via the environment's preview panel (IDE / Cowork), `open` it on a local Mac, or summarize the digest in chat if the session is headless. Don't fail on `open`.
 - **Autopilot — the GUI-only key step.** To schedule it, they add their Anthropic key as a GitHub **secret** — a web page, never a terminal or editor. Build their exact deep link from `git remote get-url origin`:
   `https://github.com/<owner>/<repo>/settings/secrets/actions/new?name=ANTHROPIC_API_KEY`
   Tell them: open it → paste the key from console.anthropic.com → click **Add secret**. Then **you** uncomment the `schedule:` block in `.github/workflows/scan.yml` for them. (Optional secrets: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.)

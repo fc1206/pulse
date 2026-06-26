@@ -17,11 +17,11 @@ Execute the `/setup` command in full: interview them about their company, lane, 
 Run `/scan` now, interactively. This uses **your own model access** (you, the agent, are running it), so they get their first real result **without setting up any key or secret**. Produce the registry, the digest, and the report.
 
 ## 3. Show them the payoff
-Render and open the deliverable:
+Render the deliverable:
 ```bash
-python3 scripts/render_report.py && open data/report.html 2>/dev/null || true
+python3 scripts/render_report.py
 ```
-Then, in one short paragraph, walk them through the **digest**: the 1–3 things that changed and what to do about each. This is the moment they understand the product — make it land. Point them at `data/report.html` as their living dashboard.
+`data/report.html` is their dashboard. **Surface it however the environment allows:** an IDE or **Cowork preview panel** shows the HTML automatically; on a local Mac you can `open data/report.html`. If you're in a headless / cloud session with no preview, that's fine — don't fail on `open`. Either way, walk them through the **digest** in one short paragraph: the 1–3 things that changed and what to do about each, and tell them the dashboard lives at `data/report.html` (and updates every scan). This is the moment they understand the product — make it land.
 
 ## 4. Autopilot — the one manual step, and it's a GUI
 For the radar to run itself twice a week it needs their Anthropic API key stored as a GitHub **secret**. This is the only thing they do by hand, and it is a **graphical web page — never a terminal or text editor**:
