@@ -389,7 +389,9 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .controls{display:flex;gap:8px;margin:10px 0 12px;flex-wrap:wrap;}
 .controls input{flex:1;min-width:200px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:14px;color:var(--ink);}
 .fb{background:#fff;border:1px solid var(--line);border-radius:9px;color:#6f6a60;padding:7px 13px;cursor:pointer;font-size:13px;}.fb.on{color:var(--flame);border-color:var(--flame);}
-table{width:100%;border-collapse:collapse;}th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.tablebox{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:13px;background:var(--card);box-shadow:0 1px 2px rgba(40,28,12,.04),0 18px 40px -34px rgba(40,28,12,.2);}
+table{width:100%;border-collapse:collapse;}th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+#reg thead th{position:sticky;top:0;background:var(--card);z-index:2;}#reg tr:last-child td{border-bottom:0;}
 td{padding:10px 9px;border-bottom:1px solid #f4efe7;vertical-align:top;font-size:13px;color:#56524a;}td .cname{color:var(--ink);}
 a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-width:430px;}.twhat a{color:var(--flame);}
 .foot{margin-top:28px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#b3ada3;text-transform:uppercase;}.foot b{color:var(--flame);font-weight:500;}
@@ -428,7 +430,8 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 
 <div class="sec"><div class="eyebrow">Full registry · {{NALL}}</div>
 <div class="controls"><input id="q" placeholder="Search name, domain, description…"><button class="fb on" data-t="all">All</button><button class="fb" data-t="1">T1</button><button class="fb" data-t="2">T2</button><button class="fb" data-t="3">T3</button><button class="fb" data-t="new">New</button></div>
-<table id="reg"><thead><tr><th>Company</th><th>Tier</th><th>Cluster</th><th>Stage</th><th>HQ</th><th>What / why it matters</th></tr></thead><tbody>{{TABLE}}</tbody></table></div>
+<div class="cap" style="margin:-2px 0 9px">The complete index — search a name or filter by tier; the full list scrolls inside.</div>
+<div class="tablebox"><table id="reg"><thead><tr><th>Company</th><th>Tier</th><th>Cluster</th><th>Stage</th><th>HQ</th><th>What / why it matters</th></tr></thead><tbody>{{TABLE}}</tbody></table></div></div>
 
 <div class="foot">{{PRODUCT}} · {{NALL}} tracked · positions from axis scores in the registry · <b>built by Astell</b>{{REPOFOOT}}</div>
 </div>
