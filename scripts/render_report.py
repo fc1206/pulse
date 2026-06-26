@@ -80,23 +80,39 @@ def parse_funding(*texts):
     return ""
 
 
-def activity_series(scanlog, rows):
-    """Per-scan (date, tracked_cumulative, new) from SCANLOG; falls back to a flat seed point."""
-    pts = []
-    cum = 0
+def known(v):
+    """A metadata value, or '' if empty/unknown (so the UI can omit/dim it gracefully)."""
+    v = str(v or "").strip()
+    return "" if not v or v.lower() == "unknown" else v
+
+
+def confidence(r):
+    """How well-sourced a row is, from how many core fields are verified + evidence present."""
+    n = sum(1 for k in ("stage", "hq", "founded") if known(r.get(k))) + \
+        (1 if str(r.get("evidence_url", "")).startswith("http") else 0)
+    return "verified" if n >= 3 else ("partial" if n >= 1 else "thin")
+
+
+CONF_LABEL = {"verified": "verified", "partial": "partial source", "thin": "thin source"}
+
+
+def _tile(label, val):
+    """A metadata tile; dims to a faint em-dash when the value is empty/unknown."""
+    v = known(val)
+    return f'<div class="tile{"" if v else " dim"}"><div class="lab">{esc(label)}</div><div class="tv">{esc(v or "—")}</div></div>'
+
+
+def activity_series(scanlog):
+    """Per real scan: (date, tracked_cumulative, new) from SCANLOG. No synthetic ramp —
+    returns 0, 1, or many points; the renderer shows an honest 'first scan' state for <2."""
+    pts, cum = [], 0
     for blk in re.split(r"^## ", scanlog, flags=re.M)[1:]:
         dm = re.match(r"(\d{4}-\d{2}-\d{2})", blk)
-        nm = re.search(r"net-new added:\s*(\d+)", blk)
         if not dm:
             continue
-        new = int(nm.group(1)) if nm else 0
-        cum += new
-        pts.append((dm.group(1)[5:], cum, new))
-    if len(pts) < 2:  # not enough scan history — synthesize a gentle ramp to today's total
-        total = len(rows)
-        pts = [(f"−{4-i}w", round(total * (0.6 + i * 0.1)), 0) for i in range(4)] + [("now", total, 0)]
-    base = pts[0][1]
-    pts = [(d, c - base + max(1, base), n) for d, c, n in pts]  # show tracked growth from a baseline
+        nm = re.search(r"net-new added:\s*(\d+)", blk)
+        cum += int(nm.group(1)) if nm else 0
+        pts.append((dm.group(1)[5:], cum, int(nm.group(1)) if nm else 0))
     return pts[-6:]
 
 
@@ -118,9 +134,15 @@ def digest_items(digest):
 
 
 def pick_spotlight(rows, run_date):
-    """The featured company: newest active Tier-1, else newest active Tier-1/2, else first active."""
+    """Featured company: prefer the newest active Tier-1 that has VERIFIED metadata (so the
+    hero card isn't full of 'unknown'), then fall back through looser pools."""
     active = [r for r in rows if r.get("status") == "active"]
-    for pool in ([r for r in active if r["tier"] == "1"], [r for r in active if r["tier"] in ("1", "2")], active):
+    verified = lambda r: all(known(r.get(k)) for k in ("stage", "founded", "hq"))
+    pools = ([r for r in active if r["tier"] == "1" and verified(r)],
+             [r for r in active if r["tier"] == "1"],
+             [r for r in active if r["tier"] in ("1", "2") and verified(r)],
+             [r for r in active if r["tier"] in ("1", "2")], active)
+    for pool in pools:
         if pool:
             return sorted(pool, key=lambda r: (r.get("first_seen", ""), r["tier"]), reverse=True)[0]
     return rows[0] if rows else None
@@ -173,7 +195,13 @@ def render(root, out):
     new_names = {r["name"] for r in new_rows}
 
     # ---- radar activity sparkline ----
-    series = activity_series(scanlog, rows)
+    series = activity_series(scanlog)
+    first_scan = len(series) < 2
+    if first_scan:  # only the seed/first scan so far — flat baseline, never a fake ramp
+        total = len(rows)
+        series = [("baseline", total, 0), ("now", total, len(new_rows))]
+    activity_note = ('<div class="cap" style="margin-top:7px">First scan — your activity trend builds from here.</div>'
+                     if first_scan else "")
     xs = [i / max(1, len(series) - 1) for i in range(len(series))]
     tmax = max([c for _, c, _ in series] + [1])
     def line(idxs, vals, vmax):
@@ -189,21 +217,21 @@ def render(root, out):
     xlabels = "".join(f"<span>{esc(d)}</span>" for d, _, _ in series)
     net30 = sum(n for _, _, n in series)
 
-    # ---- companies list (active T1 first, then T2) ----
+    # ---- companies list (active T1 first; clickable drill-down to the detail panel) ----
     order = sorted([r for r in rows if r.get("status") == "active"],
-                   key=lambda r: (r["tier"], 0 if r["name"] in new_names else 1, r["name"].lower()))[:6]
+                   key=lambda r: (r["tier"], 0 if r["name"] in new_names else 1, r["name"].lower()))
     crows = ""
     for r in order:
         t = r["tier"]
         av = "av1" if t == "1" else "av2"
         chip = "t1" if t == "1" else "t2"
-        fund = parse_funding(r.get("what", ""), r.get("notes", ""))
-        sub = " · ".join(p for p in [r.get("stage", "").replace("series-", "Series ").title() if r.get("stage") else "",
-                         fund, (("est. " + r["founded"]) if r.get("founded") not in ("", "unknown") else r.get("hq", ""))] if p)
+        stage = known(r.get("stage")).replace("series-", "Series ").title()
+        tail = (("est. " + r["founded"]) if known(r.get("founded")) else known(r.get("hq")))
+        sub = " · ".join(p for p in [stage, parse_funding(r.get("what", ""), r.get("notes", "")), tail] if p)
         newt = ' <span class="pill pf" style="padding:1px 7px;font-size:9px">New</span>' if r["name"] in new_names else ""
-        crows += (f'<a class="crow" href="https://{esc(r["domain"])}" target="_blank" rel="noopener"><div class="mav {av}">{esc(r["name"][0])}</div>'
+        crows += (f'<button class="crow" type="button" data-domain="{esc(r["domain"])}"><div class="mav {av}">{esc(r["name"][0])}</div>'
                   f'<div class="cmeta"><div class="cname">{esc(r["name"])}{newt}</div>'
-                  f'<div class="csub">{esc(sub)}</div></div><span class="tchip {chip}">T{esc(t)}</span></a>')
+                  f'<div class="csub">{esc(sub)}</div></div><span class="tchip {chip}">T{esc(t)}</span></button>')
 
     # ---- spotlight ----
     sp = pick_spotlight(rows, run_date)
@@ -233,13 +261,10 @@ def render(root, out):
         ev_html += (f'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20"/></svg>'
                     f'<a href="https://{esc(sp["domain"])}" target="_blank" rel="noopener">{esc(sp["domain"])}</a> — product site</div>')
         sp_html = f"""<div class="card">
-        <div class="rb"><div class="pills"><span class="pill {tchip}">Tier {esc(sp["tier"])}</span><span class="pill ps">{esc(clu)}</span></div><span class="lab">tracked</span></div>
+        <div class="rb"><div class="pills"><span class="pill {tchip}">Tier {esc(sp["tier"])}</span><span class="pill ps">{esc(clu)}</span><span class="pill conf {confidence(sp)}">{esc(CONF_LABEL[confidence(sp)])}</span></div><span class="lab">tracked</span></div>
         <div class="stitle"><a href="https://{esc(sp["domain"])}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">{esc(sp["name"])}</a> — {esc(title)}</div>
         <div class="lab" style="margin-top:2px">{esc(sp["domain"])}</div>
-        <div class="tiles"><div class="tile"><div class="lab">Funding</div><div class="tv">{esc(fund)}</div></div>
-        <div class="tile"><div class="lab">Stage</div><div class="tv">{esc((sp.get("stage","") or "—").replace("series-","Series ").title())}</div></div>
-        <div class="tile"><div class="lab">HQ</div><div class="tv">{esc((sp.get("hq","") or "—").split(",")[0])}</div></div>
-        <div class="tile"><div class="lab">Founded</div><div class="tv">{esc(sp.get("founded","—") or "—")}</div></div></div>
+        <div class="tiles">{_tile("Funding", parse_funding(sp.get("what",""), sp.get("notes","")))}{_tile("Stage", known(sp.get("stage")).replace("series-","Series ").title())}{_tile("HQ", known(sp.get("hq")).split(",")[0])}{_tile("Founded", sp.get("founded"))}</div>
         <p class="body">{esc(what)}</p>
         <div class="lab" style="margin:18px 0 2px">Suggested next steps</div>
         <ul class="steps">{steps_html}</ul>
@@ -279,10 +304,10 @@ def render(root, out):
         chip = "t1" if r["tier"] == "1" else ("t2" if r["tier"] == "2" else "t3")
         ev = r.get("evidence_url", "")
         nt = ' <span class="pill pf" style="padding:1px 6px;font-size:9px">NEW</span>' if r["name"] in new_names else ""
-        return (f'<tr data-tier="{esc(r["tier"])}"{" data-new=1" if r["name"] in new_names else ""}>'
+        return (f'<tr data-domain="{esc(r["domain"])}" data-tier="{esc(r["tier"])}"{" data-new=1" if r["name"] in new_names else ""}>'
                 f'<td><div class="cname">{esc(r["name"])}{nt}</div><a class="tdom" href="https://{esc(r["domain"])}" target="_blank" rel="noopener">{esc(r["domain"])}</a></td>'
                 f'<td><span class="tchip {chip}">T{esc(r["tier"])}</span></td><td>{esc(r.get("cluster",""))}</td>'
-                f'<td>{esc(r.get("stage",""))}</td><td>{esc(r.get("hq",""))}</td>'
+                f'<td>{esc(known(r.get("stage")))}</td><td>{esc(known(r.get("hq")))}</td>'
                 f'<td class="twhat">{esc(r.get("what",""))}'
                 + (f' · <a href="{esc(ev)}" target="_blank" rel="noopener">evidence</a>' if ev.startswith("http") else "") + "</td></tr>")
     table_rows = "\n".join(trow(r) for r in sorted(rows, key=lambda r: (r["tier"], r["name"].lower())))
@@ -300,6 +325,7 @@ def render(root, out):
     repo = brand["repo_url"]
     repo_foot = f' · <a href="{esc(repo)}" style="color:inherit" target="_blank" rel="noopener">repo</a>' if repo.startswith("http") else ""
 
+    companies_json = json.dumps([{**r, "conf": confidence(r)} for r in rows], ensure_ascii=False)
     doc = TEMPLATE
     subs = {
         "ACCENT": accent, "ACC2": accent2, "ACCSOFT": _rgba(accent, .10), "ACCSOFT2": _rgba(accent, .07),
@@ -309,6 +335,7 @@ def render(root, out):
         "NET30": ("+" + str(net30)) if net30 else "0", "TRACKLINE": track_line, "NEWLINE": new_line,
         "XLABELS": xlabels, "NALL": str(len(rows)), "NT1": str(len(tiers["1"])),
         "NT2": str(len(tiers["2"])), "NNEW": str(len(new_rows)), "CROWS": crows,
+        "COMPANYDATA": companies_json, "ACTIVITYNOTE": activity_note,
         "SPOTLIGHT": sp_html or '<div class="card"><p class="body">No companies yet — run a scan.</p></div>',
         "MAPSECTION": map_section,
         "MAPDATA": json.dumps(named, ensure_ascii=False), "FAINT": json.dumps(faint, ensure_ascii=False),
@@ -350,7 +377,9 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .pills{display:flex;gap:7px;flex-wrap:wrap;}
 .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;border:1px solid transparent;}
 .pf{background:{{ACCSOFT}};color:{{ACCENT}};border-color:{{ACCSOFT}};}.pa{background:#fdf1da;color:#8a6a1e;border-color:#f4e2bf;}.ps{background:#eef0f2;color:#586170;border-color:#e2e5e9;}.pn{background:#f4f1ec;color:#6f6a60;border-color:#e8e3da;}
-.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;color:inherit;text-decoration:none;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
+.pill.conf{font-size:9px;padding:3px 8px;}.conf.verified{background:#e8f5ec;color:#2c7a4b;}.conf.partial{background:#fdf4e3;color:#9a6a1e;}.conf.thin{background:#f4f1ec;color:#8a8478;}
+.companylist{max-height:496px;overflow:auto;margin:0 -4px;padding:0 4px;}
+.crow{width:100%;display:flex;align-items:center;gap:11px;padding:9px 5px;border:0;border-top:1px solid #f4efe7;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;border-radius:9px;}.crow:first-child{border-top:0;}.crow:hover,.crow.active{background:#fcf8f3;}.crow.active{box-shadow:inset 3px 0 0 var(--flame);}
 .mav{width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;}
 .av1{background:{{ACCSOFT}};color:{{ACCENT}};}.av2{background:#fdf1da;color:#8a6a1e;}
 .cmeta{flex:1;min-width:0;}.cname{font-weight:500;font-size:13.5px;}.csub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -358,7 +387,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .t1{background:{{ACCSOFT}};color:{{ACCENT}};}.t2{background:#fdf1da;color:#8a6a1e;}.t3{background:#eef0f2;color:#586170;}
 .stitle{font-family:'Newsreader',serif;font-weight:400;font-size:22px;margin:13px 0 2px;letter-spacing:-.01em;}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0;}
-.tile{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:#fffdfb;}.tile .tv{font-size:15px;font-weight:500;margin-top:3px;}
+.tile{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:#fffdfb;}.tile .tv{font-size:15px;font-weight:500;margin-top:3px;}.tile.dim{background:#fbf9f6;}.tile.dim .tv{color:#c3bcb0;font-weight:400;}
 .body{font-size:13.5px;color:#56524a;line-height:1.55;}
 .steps{list-style:none;margin:6px 0 0;padding:0;}.steps li{display:flex;gap:9px;padding:6px 0;font-size:13.5px;}.ar{color:var(--flame);font-weight:600;}
 .ev{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid #f4efe7;font-size:12.5px;color:#56524a;}.ev svg{color:var(--flame);flex:none;}.ev a{color:var(--ink);text-decoration:none;font-weight:500;}
@@ -393,6 +422,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 table{width:100%;border-collapse:collapse;}th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
 #reg thead th{position:sticky;top:0;background:var(--card);z-index:2;}#reg tr:last-child td{border-bottom:0;}
 td{padding:10px 9px;border-bottom:1px solid #f4efe7;vertical-align:top;font-size:13px;color:#56524a;}td .cname{color:var(--ink);}
+#reg tbody tr{cursor:pointer;}#reg tbody tr:hover{background:#fcf8f3;}
 a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-width:430px;}.twhat a{color:var(--flame);}
 .foot{margin-top:28px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#b3ada3;text-transform:uppercase;}.foot b{color:var(--flame);font-weight:500;}
 </style></head><body><div class="pb">
@@ -411,15 +441,14 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
         <polyline fill="none" stroke="#3b82c4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="{{TRACKLINE}}"/>
         <polyline fill="none" stroke="#1d9e75" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="{{NEWLINE}}"/>
       </svg>
-      <div class="xaxis">{{XLABELS}}</div>
+      <div class="xaxis">{{XLABELS}}</div>{{ACTIVITYNOTE}}
     </div>
     <div class="card">
-      <div class="rb" style="margin-bottom:10px"><span class="lab">Companies · {{NALL}}</span></div>
-      <div class="pills" style="margin-bottom:6px"><span class="pill pf">All {{NALL}}</span><span class="pill pn">Tier 1 · {{NT1}}</span><span class="pill pn">Tier 2 · {{NT2}}</span><span class="pill pn">New · {{NNEW}}</span></div>
-      <div>{{CROWS}}</div>
+      <div class="rb" style="margin-bottom:10px"><span class="lab">Companies · {{NALL}}</span><span class="lab" style="font-size:9px">click to inspect →</span></div>
+      <div class="companylist">{{CROWS}}</div>
     </div>
   </div>
-  <div class="col">{{SPOTLIGHT}}</div>
+  <div class="col" id="spotlight">{{SPOTLIGHT}}</div>
 </div>
 
 {{MAPSECTION}}
@@ -437,7 +466,26 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </div>
 <script>
 (function(){
- var named={{MAPDATA}},faint={{FAINT}},map=document.getElementById('pmap');
+ var named={{MAPDATA}},faint={{FAINT}},companies={{COMPANYDATA}},map=document.getElementById('pmap');
+ function jesc(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+ function jknown(s){s=String(s||'').trim();return (!s||s.toLowerCase()==='unknown')?'':s;}
+ function jfund(c){var t=(c.what||'')+' '+(c.notes||''),m=t.match(/\$\s?(\d[\d.]*)\s?([MB])\b/i);return m?'$'+m[1]+m[2].toUpperCase():'';}
+ function jtile(label,val){var v=jknown(val);return '<div class="tile'+(v?'':' dim')+'"><div class="lab">'+label+'</div><div class="tv">'+(v?jesc(v):'—')+'</div></div>';}
+ var JCONF={verified:'verified',partial:'partial source',thin:'thin source'};
+ function showCompany(domain){
+  var c=companies.find(function(x){return x.domain===domain;});if(!c)return;
+  document.querySelectorAll('.crow').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-domain')===domain);});
+  var host=document.getElementById('spotlight'),ev=c.evidence_url||'',evdom=ev.replace(/^https?:\/\/(www\.)?/,'').split('/')[0],site='https://'+c.domain;
+  var stage=jknown(c.stage).replace(/^series-/,'Series '),tier=c.tier||'',tchip=tier==='1'?'pf':(tier==='2'?'pa':'ps'),cf=c.conf||'thin';
+  host.innerHTML='<div class="card"><div class="rb"><div class="pills"><span class="pill '+tchip+'">Tier '+jesc(tier)+'</span><span class="pill ps">'+jesc(c.cluster||'')+'</span><span class="pill conf '+cf+'">'+JCONF[cf]+'</span></div><span class="lab">tracked</span></div>'
+   +'<div class="stitle"><a href="'+jesc(site)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+jesc(c.name)+'</a> — '+jesc((c.what||c.name).split(/[.;]/)[0].slice(0,80))+'</div>'
+   +'<div class="lab" style="margin-top:2px">'+jesc(c.domain)+'</div>'
+   +'<div class="tiles">'+jtile('Funding',jfund(c))+jtile('Stage',stage)+jtile('HQ',jknown(c.hq).split(',')[0])+jtile('Founded',c.founded)+'</div>'
+   +'<p class="body">'+jesc(c.what||'')+'</p>'+(c.why_tier?'<div class="lab" style="margin:18px 0 2px">Why tier</div><p class="body">'+jesc(c.why_tier)+'</p>':'')
+   +'<div class="lab" style="margin:18px 0 6px">Evidence</div>'
+   +(ev.indexOf('http')===0?'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><a href="'+jesc(ev)+'" target="_blank" rel="noopener">'+jesc(evdom)+'</a> — primary source</div>':'')
+   +'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20"/></svg><a href="'+jesc(site)+'" target="_blank" rel="noopener">'+jesc(c.domain)+'</a> — product site</div></div>';
+ }
  function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
  function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
   faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
@@ -454,6 +502,8 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
  var q=document.getElementById('q'),rows=[].slice.call(document.querySelectorAll('#reg tbody tr')),mode='all';
  function ap(){var t=(q.value||'').toLowerCase();rows.forEach(function(r){var okM=mode==='all'||(mode==='new'?r.hasAttribute('data-new'):r.getAttribute('data-tier')===mode);var okT=!t||r.textContent.toLowerCase().indexOf(t)!==-1;r.style.display=(okM&&okT)?'':'none';});}
  q.addEventListener('input',ap);document.querySelectorAll('.fb').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});b.classList.add('on');mode=b.getAttribute('data-t');ap();});});
+ document.querySelectorAll('.crow').forEach(function(b){b.addEventListener('click',function(){showCompany(b.getAttribute('data-domain'));});});
+ rows.forEach(function(r){r.addEventListener('click',function(e){if(e.target.closest('a'))return;showCompany(r.getAttribute('data-domain'));document.getElementById('spotlight').scrollIntoView({behavior:'smooth',block:'start'});});});
 })();
 </script></body></html>"""
 

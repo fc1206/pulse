@@ -26,7 +26,9 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .pills{display:flex;gap:7px;flex-wrap:wrap;}
 .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;border:1px solid transparent;}
 .pf{background:rgba(252,75,50,0.1);color:#fc4b32;border-color:rgba(252,75,50,0.1);}.pa{background:#fdf1da;color:#8a6a1e;border-color:#f4e2bf;}.ps{background:#eef0f2;color:#586170;border-color:#e2e5e9;}.pn{background:#f4f1ec;color:#6f6a60;border-color:#e8e3da;}
-.crow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-top:1px solid #f4efe7;color:inherit;text-decoration:none;}.crow:first-child{border-top:0;}.crow:hover{background:#fcf8f3;}
+.pill.conf{font-size:9px;padding:3px 8px;}.conf.verified{background:#e8f5ec;color:#2c7a4b;}.conf.partial{background:#fdf4e3;color:#9a6a1e;}.conf.thin{background:#f4f1ec;color:#8a8478;}
+.companylist{max-height:496px;overflow:auto;margin:0 -4px;padding:0 4px;}
+.crow{width:100%;display:flex;align-items:center;gap:11px;padding:9px 5px;border:0;border-top:1px solid #f4efe7;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;border-radius:9px;}.crow:first-child{border-top:0;}.crow:hover,.crow.active{background:#fcf8f3;}.crow.active{box-shadow:inset 3px 0 0 var(--flame);}
 .mav{width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;}
 .av1{background:rgba(252,75,50,0.1);color:#fc4b32;}.av2{background:#fdf1da;color:#8a6a1e;}
 .cmeta{flex:1;min-width:0;}.cname{font-weight:500;font-size:13.5px;}.csub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -34,7 +36,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 .t1{background:rgba(252,75,50,0.1);color:#fc4b32;}.t2{background:#fdf1da;color:#8a6a1e;}.t3{background:#eef0f2;color:#586170;}
 .stitle{font-family:'Newsreader',serif;font-weight:400;font-size:22px;margin:13px 0 2px;letter-spacing:-.01em;}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0;}
-.tile{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:#fffdfb;}.tile .tv{font-size:15px;font-weight:500;margin-top:3px;}
+.tile{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:#fffdfb;}.tile .tv{font-size:15px;font-weight:500;margin-top:3px;}.tile.dim{background:#fbf9f6;}.tile.dim .tv{color:#c3bcb0;font-weight:400;}
 .body{font-size:13.5px;color:#56524a;line-height:1.55;}
 .steps{list-style:none;margin:6px 0 0;padding:0;}.steps li{display:flex;gap:9px;padding:6px 0;font-size:13.5px;}.ar{color:var(--flame);font-weight:600;}
 .ev{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid #f4efe7;font-size:12.5px;color:#56524a;}.ev svg{color:var(--flame);flex:none;}.ev a{color:var(--ink);text-decoration:none;font-weight:500;}
@@ -69,6 +71,7 @@ body{margin:0;background:#f4f1ea;padding:24px;}
 table{width:100%;border-collapse:collapse;}th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
 #reg thead th{position:sticky;top:0;background:var(--card);z-index:2;}#reg tr:last-child td{border-bottom:0;}
 td{padding:10px 9px;border-bottom:1px solid #f4efe7;vertical-align:top;font-size:13px;color:#56524a;}td .cname{color:var(--ink);}
+#reg tbody tr{cursor:pointer;}#reg tbody tr:hover{background:#fcf8f3;}
 a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-width:430px;}.twhat a{color:var(--flame);}
 .foot{margin-top:28px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#b3ada3;text-transform:uppercase;}.foot b{color:var(--flame);font-weight:500;}
 </style></head><body><div class="pb">
@@ -84,18 +87,17 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
       <div class="legend"><span><i class="dot" style="background:#3b82c4"></i>Tracked</span><span><i class="dot" style="background:#1d9e75"></i>New</span></div>
       <svg viewBox="0 0 320 118" width="100%" height="118" preserveAspectRatio="none" aria-hidden="true">
         <line x1="8" y1="104" x2="312" y2="104" stroke="#ece6dc" stroke-width="1" stroke-dasharray="3 4"/><line x1="8" y1="58" x2="312" y2="58" stroke="#f1ece3" stroke-width="1" stroke-dasharray="3 4"/>
-        <polyline fill="none" stroke="#3b82c4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="8,30 84,30 160,30 236,30 312,30"/>
-        <polyline fill="none" stroke="#1d9e75" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="8,104 84,104 160,104 236,104 312,104"/>
+        <polyline fill="none" stroke="#3b82c4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="8,104 312,104"/>
+        <polyline fill="none" stroke="#1d9e75" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="8,104 312,104"/>
       </svg>
-      <div class="xaxis"><span>−4w</span><span>−3w</span><span>−2w</span><span>−1w</span><span>now</span></div>
+      <div class="xaxis"><span>baseline</span><span>now</span></div><div class="cap" style="margin-top:7px">First scan — your activity trend builds from here.</div>
     </div>
     <div class="card">
-      <div class="rb" style="margin-bottom:10px"><span class="lab">Companies · 0</span></div>
-      <div class="pills" style="margin-bottom:6px"><span class="pill pf">All 0</span><span class="pill pn">Tier 1 · 0</span><span class="pill pn">Tier 2 · 0</span><span class="pill pn">New · 0</span></div>
-      <div></div>
+      <div class="rb" style="margin-bottom:10px"><span class="lab">Companies · 0</span><span class="lab" style="font-size:9px">click to inspect →</span></div>
+      <div class="companylist"></div>
     </div>
   </div>
-  <div class="col"><div class="card"><p class="body">No companies yet — run a scan.</p></div></div>
+  <div class="col" id="spotlight"><div class="card"><p class="body">No companies yet — run a scan.</p></div></div>
 </div>
 
 
@@ -113,7 +115,26 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </div>
 <script>
 (function(){
- var named=[],faint=[],map=document.getElementById('pmap');
+ var named=[],faint=[],companies=[],map=document.getElementById('pmap');
+ function jesc(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+ function jknown(s){s=String(s||'').trim();return (!s||s.toLowerCase()==='unknown')?'':s;}
+ function jfund(c){var t=(c.what||'')+' '+(c.notes||''),m=t.match(/\$\s?(\d[\d.]*)\s?([MB])\b/i);return m?'$'+m[1]+m[2].toUpperCase():'';}
+ function jtile(label,val){var v=jknown(val);return '<div class="tile'+(v?'':' dim')+'"><div class="lab">'+label+'</div><div class="tv">'+(v?jesc(v):'—')+'</div></div>';}
+ var JCONF={verified:'verified',partial:'partial source',thin:'thin source'};
+ function showCompany(domain){
+  var c=companies.find(function(x){return x.domain===domain;});if(!c)return;
+  document.querySelectorAll('.crow').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-domain')===domain);});
+  var host=document.getElementById('spotlight'),ev=c.evidence_url||'',evdom=ev.replace(/^https?:\/\/(www\.)?/,'').split('/')[0],site='https://'+c.domain;
+  var stage=jknown(c.stage).replace(/^series-/,'Series '),tier=c.tier||'',tchip=tier==='1'?'pf':(tier==='2'?'pa':'ps'),cf=c.conf||'thin';
+  host.innerHTML='<div class="card"><div class="rb"><div class="pills"><span class="pill '+tchip+'">Tier '+jesc(tier)+'</span><span class="pill ps">'+jesc(c.cluster||'')+'</span><span class="pill conf '+cf+'">'+JCONF[cf]+'</span></div><span class="lab">tracked</span></div>'
+   +'<div class="stitle"><a href="'+jesc(site)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+jesc(c.name)+'</a> — '+jesc((c.what||c.name).split(/[.;]/)[0].slice(0,80))+'</div>'
+   +'<div class="lab" style="margin-top:2px">'+jesc(c.domain)+'</div>'
+   +'<div class="tiles">'+jtile('Funding',jfund(c))+jtile('Stage',stage)+jtile('HQ',jknown(c.hq).split(',')[0])+jtile('Founded',c.founded)+'</div>'
+   +'<p class="body">'+jesc(c.what||'')+'</p>'+(c.why_tier?'<div class="lab" style="margin:18px 0 2px">Why tier</div><p class="body">'+jesc(c.why_tier)+'</p>':'')
+   +'<div class="lab" style="margin:18px 0 6px">Evidence</div>'
+   +(ev.indexOf('http')===0?'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><a href="'+jesc(ev)+'" target="_blank" rel="noopener">'+jesc(evdom)+'</a> — primary source</div>':'')
+   +'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20"/></svg><a href="'+jesc(site)+'" target="_blank" rel="noopener">'+jesc(c.domain)+'</a> — product site</div></div>';
+ }
  function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
  function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
   faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
@@ -130,5 +151,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
  var q=document.getElementById('q'),rows=[].slice.call(document.querySelectorAll('#reg tbody tr')),mode='all';
  function ap(){var t=(q.value||'').toLowerCase();rows.forEach(function(r){var okM=mode==='all'||(mode==='new'?r.hasAttribute('data-new'):r.getAttribute('data-tier')===mode);var okT=!t||r.textContent.toLowerCase().indexOf(t)!==-1;r.style.display=(okM&&okT)?'':'none';});}
  q.addEventListener('input',ap);document.querySelectorAll('.fb').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});b.classList.add('on');mode=b.getAttribute('data-t');ap();});});
+ document.querySelectorAll('.crow').forEach(function(b){b.addEventListener('click',function(){showCompany(b.getAttribute('data-domain'));});});
+ rows.forEach(function(r){r.addEventListener('click',function(e){if(e.target.closest('a'))return;showCompany(r.getAttribute('data-domain'));document.getElementById('spotlight').scrollIntoView({behavior:'smooth',block:'start'});});});
 })();
 </script></body></html>

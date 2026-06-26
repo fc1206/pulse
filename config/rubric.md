@@ -16,11 +16,11 @@
 
 ## Clusters
 
-Default set (edit `CLUSTERS` in `scripts/validate_merge.py` to match your market):
+Default set (the machine source is `config/clusters.json` — edit that file to match your market, no code change):
 
 `direct` | `chief-of-staff` | `data-intel` | `incumbent` | `employee-assist` | `infra` | `vertical`
 
-Rename these to the meaningful sub-groups of YOUR market (e.g. for a payments product: `processors`, `orchestration`, `fraud`, `ledger`, `incumbent`, `vertical`). Keep the enum in `validate_merge.py` in sync.
+Rename these to the meaningful sub-groups of YOUR market (e.g. for a payments product: `processors`, `orchestration`, `fraud`, `ledger`, `incumbent`, `vertical`). Set them in `config/clusters.json` (validate_merge reads that) — no code edit.
 
 ## Calibration examples (replace with your own — these are neutral stubs)
 

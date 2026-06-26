@@ -60,11 +60,12 @@ def test_block_i_edge_expansion_signatures():
     assert len(hits) >= 2, f"Block I missing edge-expansion signatures (found {hits})"
 
 
-def test_block_b_has_data_intelligence_vocab():
-    """low-footprint's own cluster — wrong-vocabulary data-intelligence competitors."""
-    body = BLOCKS["B"].lower()
-    assert "data" in body and ("intelligence" in body or "analyst" in body or "bi" in body), \
-        "Block B lost the data-intelligence vocabulary that catches the low-footprint class"
+def test_block_b_is_substantive():
+    """Block B is the wrong-vocabulary / low-footprint channel. Its exact words are
+    market-specific (a fork's /setup rewrites them), so we test the mechanism — that the
+    channel carries real queries — not one market's vocabulary."""
+    queries = [l for l in BLOCKS["B"].splitlines() if l.strip().startswith("-")]
+    assert queries, "Block B (the wrong-vocabulary low-footprint channel) has no queries"
 
 
 def test_plan_run_sees_new_block(tmp_path):

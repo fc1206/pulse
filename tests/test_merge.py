@@ -165,6 +165,26 @@ def test_invalid_enums_rejected(tmp_path):
     assert "tier" in r.stdout and "cluster" in r.stdout
 
 
+def test_clusters_are_config_driven(tmp_path):
+    """A fork retargets its market by editing config/clusters.json — never code or tests.
+    A cluster valid only in that file is accepted; a default cluster absent from it is rejected.
+    This is the regression guard for the onboarding bug (clusters were hardcoded in code)."""
+    root = make_repo(tmp_path)
+    (root / "config/clusters.json").write_text(
+        json.dumps({"clusters": ["lecture-overlay", "flashcards-quiz"]}), encoding="utf-8")
+    base = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))[0]
+    # a cluster defined only in this market's config -> accepted, no code edit
+    ok = base | {"cluster": "lecture-overlay"}
+    rd = write_run(root, candidates=[ok], day="2026-06-15")
+    r = run_script("validate_merge.py", "--run-dir", str(rd), "--root", str(root), "--runner", "test")
+    assert r.returncode == 0, r.stdout + r.stderr
+    # a default cluster NOT in this market's config -> rejected
+    bad = base | {"domain": "other.example", "cluster": "data-intel"}
+    rd2 = write_run(root, candidates=[bad], day="2026-06-18")
+    r2 = run_script("validate_merge.py", "--run-dir", str(rd2), "--root", str(root))
+    assert r2.returncode == 1 and "cluster" in r2.stdout
+
+
 def test_status_update_applies_and_logs(tmp_path):
     root = make_repo(tmp_path)
     run_dir = write_run(root, candidates=[], updates=[{

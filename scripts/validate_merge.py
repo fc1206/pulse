@@ -18,7 +18,10 @@ from datetime import date
 from pathlib import Path
 
 TIERS = {"1", "2", "3"}
-CLUSTERS = {"direct", "chief-of-staff", "data-intel", "incumbent", "employee-assist", "infra", "vertical"}
+# The valid cluster set is MARKET-SPECIFIC and lives in config/clusters.json so a fork
+# retargets by editing config, never this code. This is only the fallback when that file
+# is absent (older forks / the test harness's throwaway repos).
+DEFAULT_CLUSTERS = {"direct", "chief-of-staff", "data-intel", "incumbent", "employee-assist", "infra", "vertical"}
 STATUSES = {"active", "acquired", "dead", "feature"}
 REQUIRED = ["name", "domain", "tier", "cluster", "status", "stage", "hq", "founded", "what", "why_tier", "evidence_url"]
 FIELDNAMES = ["domain", "name", "tier", "cluster", "status", "stage", "hq", "founded",
@@ -39,6 +42,20 @@ def norm_domain(d: str) -> str:
     return d.split("/")[0].split("?")[0]
 
 
+def load_clusters(root: Path) -> set:
+    """Valid cluster set from config/clusters.json (so a fork retargets via config, not
+    code). Falls back to the default set when the file is absent or malformed."""
+    p = root / "config/clusters.json"
+    if p.exists():
+        try:
+            cl = json.loads(p.read_text(encoding="utf-8")).get("clusters", [])
+            if cl:
+                return set(cl)
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            pass
+    return set(DEFAULT_CLUSTERS)
+
+
 def load_json(path: Path, default=None):
     if not path.exists():
         if default is not None:
@@ -50,7 +67,7 @@ def load_json(path: Path, default=None):
         sys.exit(f"ERROR: {path} is not valid JSON: {e}")
 
 
-def validate_candidates(cands, known):
+def validate_candidates(cands, known, clusters):
     errs, seen = [], set()
     for i, c in enumerate(cands):
         tag = f"candidates[{i}] ({c.get('name', '?')})"
@@ -67,8 +84,8 @@ def validate_candidates(cands, known):
         seen.add(d)
         if str(c.get("tier")) not in TIERS:
             errs.append(f"{tag}: tier must be one of {sorted(TIERS)}")
-        if c.get("cluster") not in CLUSTERS:
-            errs.append(f"{tag}: cluster must be one of {sorted(CLUSTERS)}")
+        if c.get("cluster") not in clusters:
+            errs.append(f"{tag}: cluster must be one of {sorted(clusters)} (edit config/clusters.json to change)")
         if c.get("status") not in STATUSES:
             errs.append(f"{tag}: status must be one of {sorted(STATUSES)}")
         if not str(c.get("evidence_url", "")).startswith("http"):
@@ -135,7 +152,7 @@ def main():
     ups = load_json(run_dir / "status_updates.json", default=[])
     meta = load_json(run_dir / "run_meta.json", default={})
 
-    errs = validate_candidates(cands, set(by_domain)) + validate_updates(ups, by_domain)
+    errs = validate_candidates(cands, set(by_domain), load_clusters(root)) + validate_updates(ups, by_domain)
     if args.corrections_only and cands:
         errs.append("--corrections-only run must not add candidates; new companies go through a scan, not a correction batch")
     if args.corrections_only and not ups:

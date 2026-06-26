@@ -1,0 +1,12 @@
+{
+  "_doc": "The valid competitive clusters for YOUR market — the single source of truth. validate_merge.py reads this to accept/reject rows, so you retarget the radar by editing THIS file (via /setup or by hand), never any Python. The defaults below suit software/AI markets; replace them with your market's sub-groups (e.g. a payments product: processors, orchestration, fraud, ledger, incumbent, vertical). Keep config/rubric.md and config/axes.json cluster keys in step.",
+  "clusters": [
+    "direct",
+    "chief-of-staff",
+    "data-intel",
+    "incumbent",
+    "employee-assist",
+    "infra",
+    "vertical"
+  ]
+}
