@@ -26,6 +26,8 @@ For each net-new candidate: WebFetch its homepage (or its YC/press page if the s
 
 **Metadata discipline (the registry's accuracy depends on this):** lift `founded`/`stage`/`hq` from a **primary** source, never an aggregator guess or the most salient year on the page. `founded` is the *incorporation* year — **not** the YC batch (F25 ≠ 2025), first-funding, OSS-launch, or rebrand year. Founding-year conflation is the most common data-entry error in this class of registry. No primary founding-year source → write `unknown`.
 
+**Verify harder for Tier 1 (these are the rows that matter):** for every Tier-1 candidate, make a genuine attempt to confirm `stage`/`hq`/`founded`/funding from a primary source before writing the row — only record `unknown` after trying, never as a default. A Tier-1 row with three blank fields is a half-finished entry; spend the fetch on it.
+
 ## 4. Status sweep + field re-audit (≤8 WebSearch calls)
 
 One query per `status_target` (template at the bottom of `config/queries.md`). Two jobs per target: **(a) material events** — funding round, acquisition, shutdown, pivot toward/away from the lane; **(b) field correctness** — while the primary source is open, confirm `founded`/`stage`/`hq` against it. Either a material change *or* a confirmed field error → `status_updates.json`. This is the **only correctness re-audit the registry gets** — write-once ingest means a wrong field is otherwise never caught. No change → nothing.

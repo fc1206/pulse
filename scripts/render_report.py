@@ -87,13 +87,16 @@ def known(v):
 
 
 def confidence(r):
-    """How well-sourced a row is, from how many core fields are verified + evidence present."""
+    """How COMPLETE a row's core profile is — count of known stage/hq/founded + evidence present.
+    A completeness signal, not a source-quality judgment: a 'partial profile' row can still be
+    backed by a strong primary source; it just has blank fields."""
     n = sum(1 for k in ("stage", "hq", "founded") if known(r.get(k))) + \
         (1 if str(r.get("evidence_url", "")).startswith("http") else 0)
     return "verified" if n >= 3 else ("partial" if n >= 1 else "thin")
 
 
-CONF_LABEL = {"verified": "verified", "partial": "partial source", "thin": "thin source"}
+# Labels read as profile COMPLETENESS, not source trust (keys are internal tiers / CSS classes).
+CONF_LABEL = {"verified": "full profile", "partial": "partial profile", "thin": "thin profile"}
 
 
 def _tile(label, val):
@@ -471,7 +474,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
  function jknown(s){s=String(s||'').trim();return (!s||s.toLowerCase()==='unknown')?'':s;}
  function jfund(c){var t=(c.what||'')+' '+(c.notes||''),m=t.match(/\$\s?(\d[\d.]*)\s?([MB])\b/i);return m?'$'+m[1]+m[2].toUpperCase():'';}
  function jtile(label,val){var v=jknown(val);return '<div class="tile'+(v?'':' dim')+'"><div class="lab">'+label+'</div><div class="tv">'+(v?jesc(v):'—')+'</div></div>';}
- var JCONF={verified:'verified',partial:'partial source',thin:'thin source'};
+ var JCONF={verified:'full profile',partial:'partial profile',thin:'thin profile'};
  function showCompany(domain){
   var c=companies.find(function(x){return x.domain===domain;});if(!c)return;
   document.querySelectorAll('.crow').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-domain')===domain);});

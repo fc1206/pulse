@@ -30,19 +30,23 @@ If the user is unsure on the rubric axes, infer sensible ones from their product
 ## 3. Seed the registry (optional but recommended)
 
 Turn the known competitors from Q3 into the first registry rows so the radar starts non-empty:
-1. For each known competitor, verify a live evidence URL (web fetch/search) and score it against the rubric you just wrote. Only register ones with a real URL; note unverifiable ones as `watch-unconfirmed`.
+1. For each known competitor, verify a live evidence URL (web fetch/search) and score it against the rubric you just wrote. Only register ones with a real URL; note unverifiable ones as `watch-unconfirmed`. **Verify harder** — while the source is open, make a genuine attempt to confirm `stage`/`hq`/`founded` from a primary source before writing `unknown`; the seed set is what the user reads first, so don't default its fields to blank. (`founded` is the *incorporation* year — never fabricate it: no primary source → `unknown`.)
 2. Write them to `runs/<today>/candidates.json` (schema in `CLAUDE.md`) plus a `run_meta.json`.
 3. Merge locally (this is an intentional local write, so set the override):
    ```bash
    RADAR_ALLOW_WRITE=1 python3 scripts/validate_merge.py --run-dir runs/<today> --runner local
    ```
-4. Render: `python3 scripts/render_report.py` (optionally `RADAR_TITLE` / `RADAR_REPO` env to brand the report + links).
+4. **Decision digest** — this seed run IS the first scan, so give it a brief like any scan. Read `config/digest-spec.md`, write `runs/<today>/digest.md` in its exact format (the 0–5 most threatening seed entrants, or the NO ACTIONABLE SIGNAL sentinel), then validate:
+   ```bash
+   python3 scripts/validate_digest.py --run-dir runs/<today>
+   ```
+5. Render: `python3 scripts/render_report.py` (optionally `RADAR_TITLE` / `RADAR_REPO` env to brand the report + links).
 
 ## 4. Verify + hand off
 
 - Run `pip install -r requirements-dev.txt && pytest -q` — all green.
-- Tell the user what was written and show the seed count. Then run `/scan` for a full sweep (you run it for them — no key needed) and `python3 scripts/render_report.py` to build the branded deliverable at `data/report.html` — show it via the environment's preview panel (IDE / Cowork), `open` it on a local Mac, or summarize the digest in chat if the session is headless. Don't fail on `open`.
-- **Autopilot — the GUI-only key step.** To schedule it, they add their Anthropic key as a GitHub **secret** — a web page, never a terminal or editor. Build their exact deep link from `git remote get-url origin`:
+- Tell the user what was written and show the seed count. The seed run you just merged + digested IS their first scan — **don't run a second `/scan` today** (a duplicate same-date run double-counts the seed and fakes the activity chart); the next scan is the next scheduled day, or whenever they ask. Show the branded deliverable at `data/report.html` via the environment's preview panel (IDE / Cowork), `open` it on a local Mac, or summarize the digest in chat if the session is headless. Don't fail on `open`.
+- **Autopilot — the GUI-only key step.** To schedule it, they add their Anthropic key as a GitHub **secret** — a web page, never a terminal or editor. Derive `<owner>/<repo>` from `git remote get-url origin` (handle both `https://github.com/owner/repo` and `git@github.com:owner/repo.git`). **If origin isn't a GitHub URL** (local path / not pushed yet), autopilot can't run until the repo is on GitHub — help them create it at `https://github.com/new` and push first, or skip autopilot for now (manual `/scan` through you stays available, key-free); never fabricate the link. Otherwise build their exact deep link:
   `https://github.com/<owner>/<repo>/settings/secrets/actions/new?name=ANTHROPIC_API_KEY`
   Tell them: open it → paste the key from console.anthropic.com → click **Add secret**. Then **you** uncomment the `schedule:` block in `.github/workflows/scan.yml` for them. (Optional secrets: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.)
 - Remind them: `config/context.md` is the highest-leverage file — keep it current as their strategy moves, or the digest goes stale. Keep the repo **private** if their competitor set is sensitive.

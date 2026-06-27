@@ -38,6 +38,6 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 
 ## Notes
 
-- Defaults (tiers, clusters, query blocks) are tuned for software / AI markets. Adjust `config/rubric.md` (and the `CLUSTERS` enum in `scripts/validate_merge.py`) for yours.
+- Defaults (tiers, clusters, query blocks) are tuned for software / AI markets. Retarget yours by editing config only — set your clusters in `config/clusters.json` and tune `config/rubric.md`; never edit Python or tests.
 - Cost is roughly the model + web-search spend of two scans a week — typically single-digit dollars a month.
 - MIT licensed, provided as-is. This is a template to build on, not a supported product.
