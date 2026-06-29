@@ -317,6 +317,7 @@ def render(root, out):
 
     headline = brand["tagline"]
     builtby = f' <b style="color:{accent}">Built by {esc(company)}.</b>' if company else ""
+    builtby_foot = f' · <b>built by {esc(company)}</b>' if company else ""
     logo = brand["logo"]
     if logo.startswith("http"):
         logo_svg = f'<img src="{esc(logo)}" alt="" style="width:19px;height:19px;border-radius:5px">'
@@ -344,7 +345,7 @@ def render(root, out):
         "MAPDATA": json.dumps(named, ensure_ascii=False), "FAINT": json.dumps(faint, ensure_ascii=False),
         "DDATE": esc(ddate or run_date), "DIGEST": dg_html, "TABLE": table_rows,
         "THREATS": "".join(f"<li>{t}</li>" for t in threat_top(landscape)) or "<li>No threat read yet.</li>",
-        "REPOFOOT": repo_foot, "PRODUCT": esc(product),
+        "REPOFOOT": repo_foot, "PRODUCT": esc(product), "BUILTBYFOOT": builtby_foot,
     }
     for k, v in subs.items():
         doc = doc.replace("{{" + k + "}}", v)
@@ -465,7 +466,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 <div class="cap" style="margin:-2px 0 9px">The complete index — search a name or filter by tier; the full list scrolls inside.</div>
 <div class="tablebox"><table id="reg"><thead><tr><th>Company</th><th>Tier</th><th>Cluster</th><th>Stage</th><th>HQ</th><th>What / why it matters</th></tr></thead><tbody>{{TABLE}}</tbody></table></div></div>
 
-<div class="foot">{{PRODUCT}} · {{NALL}} tracked · positions from axis scores in the registry · <b>built by Astell</b>{{REPOFOOT}}</div>
+<div class="foot">{{PRODUCT}} · {{NALL}} tracked · positions from axis scores in the registry{{BUILTBYFOOT}}{{REPOFOOT}}</div>
 </div>
 <script>
 (function(){
