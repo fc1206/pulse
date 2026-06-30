@@ -142,6 +142,37 @@ def test_duplicate_domain_rejected_with_normalization(tmp_path):
     assert read_registry(root) == before  # nothing written on failure
 
 
+def test_duplicate_domain_fragment_or_trailing_dot_rejected(tmp_path):
+    """norm_domain must strip #fragments and trailing dots, or a duplicate of an
+    already-tracked company slips in as a brand-new row (dedup-key bypass)."""
+    root = make_repo(tmp_path)
+    base = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))[0]
+    for dom in ("https://www.ALPHA.example/about#pricing", "alpha.example."):
+        run_dir = write_run(root, candidates=[base | {"domain": dom}], day="2026-06-15")
+        before = read_registry(root)
+        r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+        assert r.returncode == 1, f"{dom!r} should normalize to a known domain"
+        assert "already in registry" in r.stdout
+        assert read_registry(root) == before
+
+
+def test_status_update_rejects_invalid_cluster(tmp_path):
+    """A status_update may change cluster, but only to a configured one — validate_updates
+    must enforce the same cluster enum as validate_candidates (insert/update parity)."""
+    root = make_repo(tmp_path)
+    run_dir = write_run(root, candidates=[], updates=[{
+        "domain": "beta.example",
+        "fields_changed": {"cluster": "totally-bogus"},
+        "change_summary": "reclassify",
+        "evidence_url": "https://example.com/x",
+    }])
+    before = read_registry(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode == 1
+    assert "cluster" in r.stdout
+    assert read_registry(root) == before
+
+
 def test_refuses_non_canonical_writer(tmp_path):
     """Single-writer guard: an unauthorized non-CI run must refuse to write,
     so it can never re-create the parallel-writer divergence."""
