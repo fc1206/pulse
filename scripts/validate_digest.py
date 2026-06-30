@@ -6,6 +6,7 @@ Usage: python3 scripts/validate_digest.py --run-dir runs/2026-06-15 [--root .] [
 """
 import argparse
 import csv
+import os
 import re
 import sys
 from pathlib import Path
@@ -97,7 +98,13 @@ def main():
     if MARKER not in doc:
         sys.exit(f"ERROR: marker '{MARKER}' missing from data/DIGEST.md")
     doc = doc.replace(MARKER, MARKER + "\n\n" + entry, 1)
-    dig_path.write_text(doc, encoding="utf-8")
+    # atomic replace: a torn write must never leave a half-written DIGEST.md
+    tmp = dig_path.with_name(dig_path.name + ".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        f.write(doc)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, dig_path)
     n_items = len(re.split(r"^### ", entry, flags=re.M)) - 1
     print(f"DIGEST ACCEPTED: {max(n_items, 0)} item(s) prepended to data/DIGEST.md")
 

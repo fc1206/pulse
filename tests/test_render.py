@@ -19,3 +19,12 @@ def test_js_json_neutralizes_script_breakout():
     parsed = json.loads(out)[0]
     assert parsed["what"] == "</script><img src=x onerror=alert(1)>"
     assert parsed["name"] == "<!--<script>"
+
+
+def test_md_inline_url_does_not_inject_attributes():
+    # a URL with a quote must stop at the quote, so an injected attribute lands as inert
+    # text after </a>, never inside the opening <a ...> tag.
+    out = render_report.md_inline('http://evil.com/x"onmouseover="alert(1)')
+    assert '<a href="http://evil.com/x" target="_blank" rel="noopener">link</a>' in out
+    assert out.index("</a>") < out.index("onmouseover")
+

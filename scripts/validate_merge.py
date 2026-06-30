@@ -10,6 +10,7 @@ Usage: python scripts/validate_merge.py --run-dir runs/2026-06-15 [--root .] [--
 """
 import argparse
 import csv
+import io
 import json
 import os
 import re
@@ -40,6 +41,29 @@ def norm_domain(d: str) -> str:
     d = re.sub(r"^https?://", "", d)
     d = d.removeprefix("www.")
     return d.split("/")[0].split("?")[0].split("#")[0].rstrip(".")
+
+
+def _atomic_write(path: Path, text: str):
+    """Atomic replace: a torn write (crash/OOM/disk-full) leaves the previous complete
+    file intact rather than a half-written system of record."""
+    tmp = path.with_name(path.name + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def _csv_safe(row):
+    """Neutralize spreadsheet formula-injection: a cell starting with = + - @ tab or CR is
+    prefixed with an apostrophe so Excel/Sheets treats it as text, not a macro. The `domain`
+    join key is never touched — mutating it would break dedup/update matching (malformed
+    formula-leading domains are rejected at validation instead)."""
+    out = {}
+    for k, v in row.items():
+        s = "" if v is None else str(v)
+        out[k] = "'" + s if (k != "domain" and s[:1] in ("=", "+", "-", "@", "\t", "\r")) else s
+    return out
 
 
 def load_clusters(root: Path) -> set:
@@ -75,7 +99,7 @@ def validate_candidates(cands, known, clusters):
             if not str(c.get(f, "")).strip():
                 errs.append(f"{tag}: missing required field '{f}'")
         d = norm_domain(c.get("domain", ""))
-        if not d or "." not in d:
+        if not d or "." not in d or not d[0].isalnum():
             errs.append(f"{tag}: invalid domain '{c.get('domain')}'")
         elif d in known:
             errs.append(f"{tag}: domain '{d}' already in registry — if status changed, use status_updates.json; otherwise drop it")
@@ -107,6 +131,9 @@ def validate_updates(ups, by_domain, clusters):
         for k, v in changed.items():
             if k not in UPDATABLE:
                 errs.append(f"{tag}: field '{k}' is not updatable (allowed: {sorted(UPDATABLE)})")
+            if not isinstance(v, (str, int, float, bool)):
+                errs.append(f"{tag}: field '{k}' must be a scalar value, got {type(v).__name__}")
+                continue  # skip enum checks: `v not in clusters/STATUSES` would TypeError on a list/dict
             if k == "tier" and str(v) not in TIERS:
                 errs.append(f"{tag}: tier must be one of {sorted(TIERS)}")
             if k == "cluster" and v not in clusters:
@@ -147,8 +174,24 @@ def main():
 
     reg_path = root / "data/registry.csv"
     with reg_path.open(encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    by_domain = {norm_domain(r["domain"]): r for r in rows}
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    if reader.fieldnames != FIELDNAMES:
+        sys.exit(f"REGISTRY SCHEMA ERROR in data/registry.csv: header {reader.fieldnames} "
+                 f"!= expected {FIELDNAMES}. Fix the column header before merging (fail closed — "
+                 "never silently add or drop a system-of-record column).")
+    # integrity gate: domain is the join key for dedup + status updates, so a blank or
+    # duplicate normalized domain would silently corrupt both. Fail closed before any write.
+    keys = [norm_domain(r.get("domain", "")) for r in rows]
+    dups = sorted({k for k in keys if k and keys.count(k) > 1})
+    if "" in keys or dups:
+        msg = "REGISTRY INTEGRITY ERROR in data/registry.csv — "
+        if "" in keys:
+            msg += f"{keys.count('')} row(s) with blank/invalid domain; "
+        if dups:
+            msg += f"duplicate domains: {', '.join(dups)}; "
+        sys.exit(msg + "fix before merging.")
+    by_domain = {k: r for k, r in zip(keys, rows)}
 
     cands = load_json(run_dir / "candidates.json", default=[])
     ups = load_json(run_dir / "status_updates.json", default=[])
@@ -189,10 +232,11 @@ def main():
         if str(u["fields_changed"].get("tier", "")) == "1":
             tier1_updates.append((row["name"], u["change_summary"]))
 
-    with reg_path.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        w.writeheader()
-        w.writerows(rows)
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=FIELDNAMES)
+    w.writeheader()
+    w.writerows(_csv_safe(r) for r in rows)
+    _atomic_write(reg_path, buf.getvalue())
 
     # --- escalation ---
     new_t1 = [r for r in added if r["tier"] == "1"]
@@ -224,7 +268,7 @@ def main():
     land = land.replace("## Changelog\n", "## Changelog\n\n" + "\n".join(entry) + "\n", 1)
     if not args.corrections_only:  # a correction is not a scan — don't move the scan watermark
         land = re.sub(r"\*\*Last scan:\*\* .*", f"**Last scan:** {run_date} ({args.runner}) · **Tracked:** {len(rows)} companies", land, count=1)
-    land_path.write_text(land, encoding="utf-8")
+    _atomic_write(land_path, land)
 
     # --- scan log (append-only; every run logs, including zero-find runs) ---
     with (root / "data/SCANLOG.md").open("a", encoding="utf-8") as f:
@@ -254,7 +298,7 @@ def main():
         for b in list(meta.get("emphasized_blocks", [])) + [ALWAYS_BLOCK]:
             cov[str(b)] = run_date
         st["coverage"] = cov
-        st_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
+        _atomic_write(st_path, json.dumps(st, indent=2) + "\n")
 
     verb = "CORRECTED" if args.corrections_only else "MERGED"
     print(f"{verb}: +{len(added)} companies, {len(updated)} updates, "
