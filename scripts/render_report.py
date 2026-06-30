@@ -44,7 +44,7 @@ def esc_ks(s):
 
 def md_inline(s):
     s = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", s)
-    return re.sub(r"(https?://[^\s<)\]]+)", r'<a href="\1" target="_blank" rel="noopener">link</a>', s)
+    return re.sub("(https?://[^\\s<>\"')\\]]+)", r'<a href="\1" target="_blank" rel="noopener">link</a>', s)
 
 
 def _rgba(hexc, a):

@@ -275,3 +275,124 @@ def test_plan_run_flags_stale_coverage(tmp_path):
     assert "G" in stale          # never swept → flagged
     assert "A" not in stale      # swept this run → fresh
     assert "coverage" in plan and plan["coverage"]["A"] == date.today().isoformat()
+
+
+def test_corrections_only_does_not_advance_scan_state(tmp_path):
+    """An out-of-band correction applies status_updates + writes a correction-tagged
+    changelog, but must NOT advance scan cursors, stamp coverage, or move the scan
+    watermark — otherwise a between-scans accuracy fix desyncs the scheduler."""
+    root = make_repo(tmp_path)
+    before = json.loads((root / "data/state.json").read_text())
+    run_dir = write_run(root, candidates=None, updates=[{
+        "domain": "beta.example",
+        "fields_changed": {"founded": "2020", "hq": "Berlin, DE"},  # corrigible factual fields
+        "change_summary": "accuracy fix: founded 2021 -> 2020; hq US -> Berlin, DE",
+        "evidence_url": "https://example.com/about",
+    }], day="2026-06-15")
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root),
+                   "--runner", "audit", "--corrections-only")
+    assert r.returncode == 0, r.stdout + r.stderr
+    z = [x for x in read_registry(root) if x["domain"] == "beta.example"][0]
+    assert z["founded"] == "2020" and z["hq"] == "Berlin, DE" and z["last_checked"] == date.today().isoformat()
+    after = json.loads((root / "data/state.json").read_text())
+    assert after["block_cursor"] == before["block_cursor"]      # cursors frozen
+    assert after["status_cursor"] == before["status_cursor"]
+    assert after.get("coverage", {}) == before.get("coverage", {})
+    land = (root / "data/LANDSCAPE.md").read_text(encoding="utf-8")
+    assert "— correction (audit)" in land and "Corrected: Beta" in land
+    assert "**Last scan:** 2026-06-10 (baseline)" in land       # scan watermark untouched
+    assert "Out-of-band accuracy corrections: 1 rows" in (root / "data/SCANLOG.md").read_text(encoding="utf-8")
+
+
+def test_corrections_only_rejects_new_candidates(tmp_path):
+    """corrections-only is for fixing existing rows, never adding companies."""
+    root = make_repo(tmp_path)
+    cand = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))
+    run_dir = write_run(root, candidates=cand, updates=[{
+        "domain": "beta.example", "fields_changed": {"founded": "2020"},
+        "change_summary": "x", "evidence_url": "https://e.com/about",
+    }])
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root), "--corrections-only")
+    assert r.returncode == 1
+    assert "must not add candidates" in r.stdout
+
+
+def test_score_axes_deterministic_and_sane(tmp_path):
+    """Axis scoring must be reproducible (same registry → same coordinates) and rank a
+    cross-tool direct competitor broader than a warehouse-bound data-intel tool."""
+    root = make_repo(tmp_path)
+    r1 = run_script("score_axes.py", "--root", str(root), "--all")
+    r2 = run_script("score_axes.py", "--root", str(root), "--all")
+    assert r1.returncode == 0, r1.stderr
+    assert r1.stdout == r2.stdout                       # deterministic
+    d = json.loads(r1.stdout)
+    by = {c["name"]: c for c in d["companies"]}
+    for c in d["companies"]:
+        assert 8 <= c["axis_breadth"] <= 96 and 8 <= c["axis_action"] <= 96  # clamped
+    assert by["Alpha"]["axis_breadth"] > by["Beta"]["axis_breadth"]          # breadth ordering
+    assert by["Beta"]["axis_action"] < 50                                    # analyst leans retrieve
+
+
+def test_status_update_rejects_nonscalar_value(tmp_path):
+    """A status_update value must be a scalar — a list/dict/None must not be str()-ified
+    into the registry across the trust boundary."""
+    root = make_repo(tmp_path)
+    run_dir = write_run(root, candidates=[], updates=[{
+        "domain": "beta.example", "fields_changed": {"cluster": ["a", "b"]},
+        "change_summary": "x", "evidence_url": "https://e.com/x",
+    }])
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode == 1
+    assert "scalar" in r.stdout            # clean failure, not a TypeError crash on the enum check
+    assert "Traceback" not in (r.stdout + r.stderr)
+
+
+def test_load_gate_rejects_corrupt_registry(tmp_path):
+    """Domain is the join key for dedup + status updates; a blank or duplicate domain in
+    the registry must fail the merge closed rather than silently corrupt the join."""
+    root = make_repo(tmp_path)
+    reg = root / "data/registry.csv"
+    reg.write_text(reg.read_text(encoding="utf-8")
+                   + ",Blank,3,direct,active,seed,US,2020,2026-06-10,2026-06-10,x,y,https://x.example/,\n"
+                   + "alpha.example,Dup,3,direct,active,seed,US,2020,2026-06-10,2026-06-10,x,y,https://d.example/,\n",
+                   encoding="utf-8")
+    r = run_script("validate_merge.py", "--run-dir", str(write_run(root, candidates=[])), "--root", str(root))
+    assert r.returncode != 0
+    assert "INTEGRITY ERROR" in (r.stdout + r.stderr)
+
+
+def test_load_gate_rejects_unexpected_registry_columns(tmp_path):
+    """An out-of-band column add/drop in the registry must fail closed, not silently drop
+    data on the next system-of-record rewrite."""
+    root = make_repo(tmp_path)
+    reg = root / "data/registry.csv"
+    lines = reg.read_text(encoding="utf-8").splitlines()
+    lines[0] = lines[0] + ",surprise"            # extra header column
+    reg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    r = run_script("validate_merge.py", "--run-dir", str(write_run(root, candidates=[])), "--root", str(root))
+    assert r.returncode != 0
+    assert "SCHEMA ERROR" in (r.stdout + r.stderr)
+
+
+def test_csv_formula_injection_neutralized(tmp_path):
+    """A candidate field starting with a formula char is written with a leading apostrophe
+    so a spreadsheet treats it as text, not a macro."""
+    root = make_repo(tmp_path)
+    base = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))[0]
+    cand = base | {"domain": "formula.example", "name": "=cmd|'/c calc'!A1"}
+    run_dir = write_run(root, candidates=[cand])
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root), "--runner", "test")
+    assert r.returncode == 0, r.stdout + r.stderr
+    row = [x for x in read_registry(root) if x["domain"] == "formula.example"][0]
+    assert row["name"].startswith("'=")
+
+
+def test_formula_leading_domain_rejected(tmp_path):
+    """A domain starting with a formula char (=/-/+/@) is malformed and must be rejected at
+    validation — never stored, so the join key is never an injection vector or mutated."""
+    root = make_repo(tmp_path)
+    base = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))[0]
+    run_dir = write_run(root, candidates=[base | {"domain": "=evil.com"}])
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode == 1
+    assert "invalid domain" in r.stdout
