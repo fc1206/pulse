@@ -26,7 +26,7 @@ Every claim is sourced to a real link. No made-up numbers.
 ## Getting started (about 15 minutes, no technical skill)
 
 1. **Get your own copy.** On the Pulse page, click **"Use this template."** GitHub makes you a private copy in one click. *(You'll need a free GitHub account — like an email signup.)*
-2. **Open it with your AI assistant** (Claude Code or Codex) and say: **"onboard me."**
+2. **Have your assistant clone it and onboard you.** In Claude Code, Codex, or Cowork, say: **"clone `https://github.com/fc1206/pulse` and onboard me"** (use *your* copy's URL from step 1). Cloning a public repo needs no GitHub login and works on any assistant. *(Just want to try it first, before making your own copy? Clone the original public URL above — no account needed. If your assistant says the repo is "private" or 404s, that's its GitHub connector, not the repo — tell it to `clone` the URL.)*
 3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you and runs your first scan while you watch.
 4. **Read your first brief.** That's it — you have a working radar.
 
