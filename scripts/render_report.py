@@ -25,7 +25,7 @@ FRONTIER_K = 8  # the map NAMES only the K competitors nearest the convergence c
 DEFAULT_BRAND = {
     "product": os.environ.get("RADAR_TITLE", "Pulse"),
     "company": "",
-    "tagline": "Your competitive landscape, swept twice a week — every entrant tiered, sourced to a live link, and told straight.",
+    "tagline": "Your competitive landscape — every entrant tiered, sourced to a live link, and told straight.",
     "accent": "#fc4b32",
     "accent_2": "#e0a44d",
     "logo": "",
@@ -188,6 +188,9 @@ def render(root, out):
     accent, accent2 = brand["accent"], brand["accent_2"]
     product = brand["product"]
     company = brand["company"]
+    # The report's display name: the configured product, falling back to the company when a fork
+    # hasn't set `product` (so the eyebrow/title read in the user's brand, not the default "Pulse").
+    radar_name = product if product and product != "Pulse" else (company or "Pulse")
     run_date = state.get("last_run", date.today().isoformat())
     tiers = {t: [r for r in rows if r["tier"] == t] for t in ("1", "2", "3")}
     new_rows = [r for r in rows if r.get("first_seen") == run_date]
@@ -220,20 +223,23 @@ def render(root, out):
     xlabels = "".join(f"<span>{esc(d)}</span>" for d, _, _ in series)
     net30 = sum(n for _, _, n in series)
 
-    # ---- companies list (active T1 first; clickable drill-down to the detail panel) ----
-    order = sorted([r for r in rows if r.get("status") == "active"],
-                   key=lambda r: (r["tier"], 0 if r["name"] in new_names else 1, r["name"].lower()))
+    # ---- companies list: every tracked company so the "Companies · N" count matches the list;
+    # active first, then acquired/dead (flagged) so a material exit like an acquisition stays visible ----
+    order = sorted(rows, key=lambda r: (0 if r.get("status") == "active" else 1, r["tier"],
+                                        0 if r["name"] in new_names else 1, r["name"].lower()))
     crows = ""
     for r in order:
         t = r["tier"]
         av = "av1" if t == "1" else "av2"
-        chip = "t1" if t == "1" else "t2"
+        chip = "t1" if t == "1" else ("t2" if t == "2" else "t3")
         stage = known(r.get("stage")).replace("series-", "Series ").title()
         tail = (("est. " + r["founded"]) if known(r.get("founded")) else known(r.get("hq")))
         sub = " · ".join(p for p in [stage, parse_funding(r.get("what", ""), r.get("notes", "")), tail] if p)
         newt = ' <span class="pill pf" style="padding:1px 7px;font-size:9px">New</span>' if r["name"] in new_names else ""
+        status = r.get("status", "active")
+        statust = "" if status == "active" else f' <span class="pill pn" style="padding:1px 7px;font-size:9px">{esc(status)}</span>'
         crows += (f'<button class="crow" type="button" data-domain="{esc(r["domain"])}"><div class="mav {av}">{esc(r["name"][0])}</div>'
-                  f'<div class="cmeta"><div class="cname">{esc(r["name"])}{newt}</div>'
+                  f'<div class="cmeta"><div class="cname">{esc(r["name"])}{newt}{statust}</div>'
                   f'<div class="csub">{esc(sub)}</div></div><span class="tchip {chip}">T{esc(t)}</span></button>')
 
     # ---- spotlight ----
@@ -269,7 +275,7 @@ def render(root, out):
         <div class="lab" style="margin-top:2px">{esc(sp["domain"])}</div>
         <div class="tiles">{_tile("Funding", parse_funding(sp.get("what",""), sp.get("notes","")))}{_tile("Stage", known(sp.get("stage")).replace("series-","Series ").title())}{_tile("HQ", known(sp.get("hq")).split(",")[0])}{_tile("Founded", sp.get("founded"))}</div>
         <p class="body">{esc(what)}</p>
-        <div class="lab" style="margin:18px 0 2px">Suggested next steps</div>
+        <div class="lab" style="margin:18px 0 2px">Your next moves</div>
         <ul class="steps">{steps_html}</ul>
         <div class="lab" style="margin:18px 0 6px">Evidence</div>{ev_html}</div>"""
 
@@ -282,7 +288,7 @@ def render(root, out):
             '<div class="mapwrap"><div class="eyebrow">The competitive map</div>'
             '<h1 style="font-size:24px;margin:7px 0 4px">Everyone is racing to the same corner.</h1>'
             f'<p class="sub" style="font-size:14px">Scored, not hand-placed — {esc(xa["low"])}→{esc(xa["high"])} × {esc(ya["low"])}→{esc(ya["high"])}. '
-            f'The {len(named)} nearest the corner are named; the rest are the field. Hover any dot.</p>'
+            f'The {len(named)} nearest the corner are named; the rest are the field — active Tier 1/2 only. Hover any dot.</p>'
             '<div class="map" id="pmap"><div class="qtr"></div><div class="qv"></div><div class="qh"></div>'
             '<div class="ql tr">convergence</div>'
             f'<div class="ql tl">{esc(ya["high"])} · narrow</div><div class="ql bl">narrow · {esc(ya["low"])}</div><div class="ql br">broad</div>'
@@ -298,6 +304,7 @@ def render(root, out):
         for it in ditems:
             dg_html += (f'<div class="dgc"><div class="dgh">{md_inline(esc_ks(it["head"]))}</div>'
                         + (f'<div class="dgr"><span>Signal</span><p>{md_inline(esc_ks(it["signal"]))}</p></div>' if it["signal"] else "")
+                        + (f'<div class="dgr"><span>Why</span><p>{md_inline(esc_ks(it["why"]))}</p></div>' if it.get("why") else "")
                         + (f'<div class="dgr act"><span>Do</span><p>{md_inline(esc_ks(it["action"]))}</p></div>' if it["action"] else "") + "</div>")
     else:
         dg_html = '<div class="dgquiet">No digest yet — run a scan to generate your first decision brief.</div>'
@@ -317,6 +324,7 @@ def render(root, out):
 
     headline = brand["tagline"]
     builtby = f' <b style="color:{accent}">Built by {esc(company)}.</b>' if company else ""
+    builtby_foot = f' · <b>built by {esc(company)}</b>' if company else ""
     logo = brand["logo"]
     if logo.startswith("http"):
         logo_svg = f'<img src="{esc(logo)}" alt="" style="width:19px;height:19px;border-radius:5px">'
@@ -328,12 +336,19 @@ def render(root, out):
     repo = brand["repo_url"]
     repo_foot = f' · <a href="{esc(repo)}" style="color:inherit" target="_blank" rel="noopener">repo</a>' if repo.startswith("http") else ""
 
+    # ---- top threats: real curated content only; never the seed placeholder (section hidden if empty) ----
+    threats = [t for t in threat_top(landscape) if "populate after" not in t.lower()]
+    threats_section = (
+        '<div class="sec"><div class="eyebrow">Top threats right now</div>'
+        f'<ol class="threats">{"".join(f"<li>{t}</li>" for t in threats)}</ol></div>'
+    ) if threats else ""
+
     companies_json = json.dumps([{**r, "conf": confidence(r)} for r in rows], ensure_ascii=False)
     doc = TEMPLATE
     subs = {
         "ACCENT": accent, "ACC2": accent2, "ACCSOFT": _rgba(accent, .10), "ACCSOFT2": _rgba(accent, .07),
         "ACC1DOT": _rgba(accent, .10), "ACC2DOT": _rgba(accent2, .13),
-        "EYEBROW": esc(f"{product} · competitive radar"), "LOGO": logo_svg,
+        "EYEBROW": esc(f"{radar_name} · competitive radar"), "LOGO": logo_svg,
         "HEADLINE": esc(headline), "BUILTBY": builtby, "RUNDATE": esc(run_date),
         "NET30": ("+" + str(net30)) if net30 else "0", "TRACKLINE": track_line, "NEWLINE": new_line,
         "XLABELS": xlabels, "NALL": str(len(rows)), "NT1": str(len(tiers["1"])),
@@ -343,8 +358,8 @@ def render(root, out):
         "MAPSECTION": map_section,
         "MAPDATA": json.dumps(named, ensure_ascii=False), "FAINT": json.dumps(faint, ensure_ascii=False),
         "DDATE": esc(ddate or run_date), "DIGEST": dg_html, "TABLE": table_rows,
-        "THREATS": "".join(f"<li>{t}</li>" for t in threat_top(landscape)) or "<li>No threat read yet.</li>",
-        "REPOFOOT": repo_foot, "PRODUCT": esc(product),
+        "THREATSECTION": threats_section,
+        "REPOFOOT": repo_foot, "PRODUCT": esc(radar_name), "BUILTBYFOOT": builtby_foot,
     }
     for k, v in subs.items():
         doc = doc.replace("{{" + k + "}}", v)
@@ -355,7 +370,8 @@ def render(root, out):
 TEMPLATE = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{PRODUCT}} — competitive radar — {{RUNDATE}}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap');
+/* System fonts only — the report makes no external request, so it stays a self-contained
+   local file (the font-family stacks below fall back to system serif/mono/sans). */
 body{margin:0;background:#f4f1ea;padding:24px;}
 .pb{--flame:{{ACCENT}};--ink:#20201c;--mut:#6f6a60;--line:#efe7dd;--card:#fff;
  background:radial-gradient(125% 70% at 50% -8%,{{ACCSOFT2}} 0%,#faf1ea 32%,#f8f7f4 100%);
@@ -431,7 +447,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </style></head><body><div class="pb">
 <div class="brand">{{LOGO}}<span class="eyebrow">{{EYEBROW}}</span></div>
 <h1>{{HEADLINE}}</h1>
-<p class="sub">Swept twice a week — every entrant tiered, sourced to a live link, and told straight.{{BUILTBY}}</p>
+<p class="sub">Every entrant tiered, sourced to a live link, and told straight.{{BUILTBY}}</p>
 <div class="statline"><span><b>{{NALL}}</b> tracked</span><span><b style="color:{{ACCENT}}">{{NNEW}}</b> new this scan</span><span><b style="color:{{ACCENT}}">{{NT1}}</b> Tier&nbsp;1</span><span><b>{{NT2}}</b> Tier&nbsp;2</span><span>scan {{RUNDATE}}</span></div>
 
 <div class="grid">
@@ -458,14 +474,14 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 
 <div class="sec"><div class="eyebrow" style="color:{{ACCENT}}">What changed &amp; what to do · {{DDATE}}</div>{{DIGEST}}</div>
 
-<div class="sec"><div class="eyebrow">Top threats right now</div><ol class="threats">{{THREATS}}</ol></div>
+{{THREATSECTION}}
 
 <div class="sec"><div class="eyebrow">Full registry · {{NALL}}</div>
 <div class="controls"><input id="q" placeholder="Search name, domain, description…"><button class="fb on" data-t="all">All</button><button class="fb" data-t="1">T1</button><button class="fb" data-t="2">T2</button><button class="fb" data-t="3">T3</button><button class="fb" data-t="new">New</button></div>
 <div class="cap" style="margin:-2px 0 9px">The complete index — search a name or filter by tier; the full list scrolls inside.</div>
 <div class="tablebox"><table id="reg"><thead><tr><th>Company</th><th>Tier</th><th>Cluster</th><th>Stage</th><th>HQ</th><th>What / why it matters</th></tr></thead><tbody>{{TABLE}}</tbody></table></div></div>
 
-<div class="foot">{{PRODUCT}} · {{NALL}} tracked · positions from axis scores in the registry · <b>built by Astell</b>{{REPOFOOT}}</div>
+<div class="foot">{{PRODUCT}} · {{NALL}} tracked · positions from axis scores in the registry{{BUILTBYFOOT}}{{REPOFOOT}}</div>
 </div>
 <script>
 (function(){
