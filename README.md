@@ -1,7 +1,7 @@
 # Pulse
 
 > ### 🤖 Just forked this? Open it in **Claude Code**, **Codex**, or **Cowork** and say *"onboard me"* (or run `/onboard`).
-> The agent sets everything up **in chat** — a 10-minute interview, your first scan, and a branded report — and makes every file edit for you. The only thing you ever do by hand is paste an API key into a GitHub web page, and only if you want it to run on autopilot. **No terminal, no YAML.**
+> The agent sets everything up **in chat** — a 10-minute interview, your first scan, and a branded report — making every file edit for you once your repo's folder is connected (if it can't write in your session, it tells you how to reconnect — still no terminal). The only thing you ever do by hand is paste an API key into a GitHub web page, and only if you want it to run on autopilot. **No terminal, no YAML.**
 >
 > **Not technical?** Read **[USING-PULSE.md](USING-PULSE.md)** — the plain-English guide: what you get, the 15-minute setup, and what it costs *you* (it's free; you pay only your own AI usage, ~$5–15/mo on autopilot or nothing if you run it by hand).
 
