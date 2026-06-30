@@ -1,7 +1,8 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pulse — competitive radar — </title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap');
+/* System fonts only — the report makes no external request, so it stays a self-contained
+   local file (the font-family stacks below fall back to system serif/mono/sans). */
 body{margin:0;background:#f4f1ea;padding:24px;}
 .pb{--flame:#fc4b32;--ink:#20201c;--mut:#6f6a60;--line:#efe7dd;--card:#fff;
  background:radial-gradient(125% 70% at 50% -8%,rgba(252,75,50,0.07) 0%,#faf1ea 32%,#f8f7f4 100%);
@@ -77,7 +78,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 </style></head><body><div class="pb">
 <div class="brand"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fc4b32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg><span class="eyebrow">Pulse · competitive radar</span></div>
 <h1>Your competitive landscape, watched — what changed and what to do about it.</h1>
-<p class="sub">Swept twice a week — every entrant tiered, sourced to a live link, and told straight.</p>
+<p class="sub">Every entrant tiered, sourced to a live link, and told straight.</p>
 <div class="statline"><span><b>0</b> tracked</span><span><b style="color:#fc4b32">0</b> new this scan</span><span><b style="color:#fc4b32">0</b> Tier&nbsp;1</span><span><b>0</b> Tier&nbsp;2</span><span>scan </span></div>
 
 <div class="grid">
@@ -104,14 +105,14 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 
 <div class="sec"><div class="eyebrow" style="color:#fc4b32">What changed &amp; what to do · </div><div class="dgquiet">No digest yet — run a scan to generate your first decision brief.</div></div>
 
-<div class="sec"><div class="eyebrow">Top threats right now</div><ol class="threats"><li>(Populate after your first few scans — your biggest direct threats, with funding + positioning.)</li></ol></div>
+
 
 <div class="sec"><div class="eyebrow">Full registry · 0</div>
 <div class="controls"><input id="q" placeholder="Search name, domain, description…"><button class="fb on" data-t="all">All</button><button class="fb" data-t="1">T1</button><button class="fb" data-t="2">T2</button><button class="fb" data-t="3">T3</button><button class="fb" data-t="new">New</button></div>
 <div class="cap" style="margin:-2px 0 9px">The complete index — search a name or filter by tier; the full list scrolls inside.</div>
 <div class="tablebox"><table id="reg"><thead><tr><th>Company</th><th>Tier</th><th>Cluster</th><th>Stage</th><th>HQ</th><th>What / why it matters</th></tr></thead><tbody></tbody></table></div></div>
 
-<div class="foot">Pulse · 0 tracked · positions from axis scores in the registry · <b>built by Astell</b></div>
+<div class="foot">Pulse · 0 tracked · positions from axis scores in the registry</div>
 </div>
 <script>
 (function(){

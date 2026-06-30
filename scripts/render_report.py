@@ -54,6 +54,16 @@ def _rgba(hexc, a):
     return f"rgba({int(h[0:2],16)},{int(h[2:4],16)},{int(h[4:6],16)},{a})"
 
 
+def _js_json(obj):
+    r"""json.dumps result safe to embed inside an inline <script>. json.dumps does NOT
+    escape <, so registry text (the model's summary of untrusted web content) containing
+    </script> OR <!--<script> could close the script element or trip the HTML "script
+    data double escaped" state and swallow the real </script>. Escape every < > & as their
+    \uXXXX forms — all JSON-legal, so the data still round-trips byte-for-byte."""
+    return (json.dumps(obj, ensure_ascii=False)
+            .replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
+
+
 def load(root):
     rows = list(csv.DictReader((root / "data/registry.csv").open(encoding="utf-8")))
     state = json.loads((root / "data/state.json").read_text(encoding="utf-8"))
@@ -343,7 +353,7 @@ def render(root, out):
         f'<ol class="threats">{"".join(f"<li>{t}</li>" for t in threats)}</ol></div>'
     ) if threats else ""
 
-    companies_json = json.dumps([{**r, "conf": confidence(r)} for r in rows], ensure_ascii=False)
+    companies_json = _js_json([{**r, "conf": confidence(r)} for r in rows])
     doc = TEMPLATE
     subs = {
         "ACCENT": accent, "ACC2": accent2, "ACCSOFT": _rgba(accent, .10), "ACCSOFT2": _rgba(accent, .07),
@@ -356,7 +366,7 @@ def render(root, out):
         "COMPANYDATA": companies_json, "ACTIVITYNOTE": activity_note,
         "SPOTLIGHT": sp_html or '<div class="card"><p class="body">No companies yet — run a scan.</p></div>',
         "MAPSECTION": map_section,
-        "MAPDATA": json.dumps(named, ensure_ascii=False), "FAINT": json.dumps(faint, ensure_ascii=False),
+        "MAPDATA": _js_json(named), "FAINT": _js_json(faint),
         "DDATE": esc(ddate or run_date), "DIGEST": dg_html, "TABLE": table_rows,
         "THREATSECTION": threats_section,
         "REPOFOOT": repo_foot, "PRODUCT": esc(radar_name), "BUILTBYFOOT": builtby_foot,

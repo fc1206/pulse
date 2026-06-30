@@ -39,7 +39,7 @@ def norm_domain(d: str) -> str:
     d = (d or "").strip().lower()
     d = re.sub(r"^https?://", "", d)
     d = d.removeprefix("www.")
-    return d.split("/")[0].split("?")[0]
+    return d.split("/")[0].split("?")[0].split("#")[0].rstrip(".")
 
 
 def load_clusters(root: Path) -> set:
@@ -93,7 +93,7 @@ def validate_candidates(cands, known, clusters):
     return errs
 
 
-def validate_updates(ups, by_domain):
+def validate_updates(ups, by_domain, clusters):
     errs = []
     for i, u in enumerate(ups):
         tag = f"status_updates[{i}] ({u.get('domain', '?')})"
@@ -109,6 +109,8 @@ def validate_updates(ups, by_domain):
                 errs.append(f"{tag}: field '{k}' is not updatable (allowed: {sorted(UPDATABLE)})")
             if k == "tier" and str(v) not in TIERS:
                 errs.append(f"{tag}: tier must be one of {sorted(TIERS)}")
+            if k == "cluster" and v not in clusters:
+                errs.append(f"{tag}: cluster must be one of {sorted(clusters)} (edit config/clusters.json to change)")
             if k == "status" and v not in STATUSES:
                 errs.append(f"{tag}: status must be one of {sorted(STATUSES)}")
         if not str(u.get("change_summary", "")).strip():
@@ -152,7 +154,8 @@ def main():
     ups = load_json(run_dir / "status_updates.json", default=[])
     meta = load_json(run_dir / "run_meta.json", default={})
 
-    errs = validate_candidates(cands, set(by_domain), load_clusters(root)) + validate_updates(ups, by_domain)
+    clusters = load_clusters(root)
+    errs = validate_candidates(cands, set(by_domain), clusters) + validate_updates(ups, by_domain, clusters)
     if args.corrections_only and cands:
         errs.append("--corrections-only run must not add candidates; new companies go through a scan, not a correction batch")
     if args.corrections_only and not ups:
