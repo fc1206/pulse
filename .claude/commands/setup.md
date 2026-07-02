@@ -29,7 +29,7 @@ If the user is unsure on the rubric axes, the competitors, or the core promise, 
 
 ## 3. First scan — the deep map (recommended)
 
-The first scan maps their whole landscape: the **full query battery in one pass** — typically **60–150 companies, category-dependent** (never promise "hundreds"). Set the time expectation up front: ~20–30 minutes run in parallel, closer to an hour sequentially.
+The first scan maps their whole landscape: the **full query battery in one pass** — typically **60–150 companies in dense software categories, 20–60 in leaner niches** (never promise "hundreds"). Set the time expectation up front: ~20–30 minutes run in parallel, closer to an hour sequentially.
 
 1. Plan the full battery: `python3 scripts/plan_run.py --seed` — emits every block from `config/queries.md` (plan marked `"seed": true`) plus the known domains to dedupe against.
 2. Run it. **If the surface supports subagents / parallel tasks,** fan out one researcher per query block in parallel and merge their candidates (dedupe by domain) before validation. **If it doesn't,** run the blocks sequentially and say so honestly — never quietly skip blocks to hit an estimate. Fold the known competitors from Q3 into the sweep; verify those first, they anchor the rubric's calibration.

@@ -71,7 +71,7 @@ A wrong-vocabulary, no-funding, non-US company is invisible to generic + US-fund
 
 ## Block I: edge-expansion (Lane 2 — recall; harvest the competitor sets others publish)
 
-Every player maps its own rivals. Compare-list directories and competitors' own `/alternatives` pages name companies your keyword queries never reach.
+Every player maps its own rivals. Compare-list directories and competitors' own `/alternatives` pages name companies your keyword queries never reach. **Tailor the sources to your category** — the lines below default to SaaS directories, but agencies and dev shops live on Clutch and Behance, AI tools on theresanaiforthat, open source on GitHub/awesome-lists: swap in the directories your market actually uses (`/setup` should rewrite these for you).
 
 - site:g2.com {competitor} OR {category} alternatives OR compare
 - site:capterra.com OR site:sourceforge.net {category} alternatives {year}

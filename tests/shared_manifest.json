@@ -11,5 +11,9 @@
   },
   "normalized": {
     "validate_merge.py": "9c1953cf0805c37f97f5fb4c64e2578e78170c03b316a1f15fc104414d8c9026"
-  }
+  },
+  "normalized_python": [
+    "3.12",
+    "3.13"
+  ]
 }
