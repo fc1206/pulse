@@ -1,5 +1,5 @@
 {
-  "_doc": "Brand for your radar's deliverable (report, digest, emails). /setup fills `company`; tweak the rest anytime. `accent` is your primary color; `theme` is light|dark; `logo` is an emoji or an image URL (optional).",
+  "_doc": "Brand for your radar's deliverable (report, digest, emails). /setup fills `company`; tweak the rest anytime. `accent` is your primary color; `theme` is light|dark; `logo` is an emoji or an image URL (optional); `why_label` brands the digest's middle label (e.g. \"Why it matters to Acme:\").",
   "product": "Pulse",
   "company": "",
   "tagline": "Your competitive landscape, watched — what changed and what to do about it.",
@@ -7,5 +7,6 @@
   "accent_2": "#2f6df0",
   "logo": "",
   "theme": "light",
-  "repo_url": ""
+  "repo_url": "",
+  "why_label": "Why it matters:"
 }

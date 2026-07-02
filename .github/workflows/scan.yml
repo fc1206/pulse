@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.RADAR_TOKEN || github.token }}
+          fetch-depth: 0   # full history so the pre-push rebase below has a base
 
       - uses: actions/setup-python@v5
         with:
@@ -45,6 +46,14 @@ jobs:
             --model "${{ vars.SCAN_MODEL || 'claude-sonnet-4-6' }}" \
             --dangerously-skip-permissions \
             --verbose 2>&1 | tee /tmp/scan.log
+
+      - name: Capture token usage into run dir
+        run: |
+          # Greps only the already-teed scan log — never echoes secrets. Committed by the publish step.
+          # No mkdir: minting runs/$(date -u +%F) across UTC midnight creates a phantom empty dir
+          # that the health check's tail -1 would select, failing a healthy scan. Write into the
+          # newest EXISTING run dir; if none exists, skip — the health check reports that case.
+          latest=$(ls -d runs/*/ 2>/dev/null | sort | tail -1); [ -n "$latest" ] && grep -iE "tokens|cost|usage" /tmp/scan.log | tail -50 > "${latest%/}/usage.log" || true
 
       - name: Post-run health check (catch silent degradation)
         run: |
@@ -69,6 +78,10 @@ jobs:
           fi
           DATE=$(date -u +%F)
           git commit -m "scan: ${DATE} (github)"
+          # Rebase onto any commit that landed on main since checkout (the merge is
+          # idempotent) so a concurrent workflow_dispatch/human commit can't bounce this
+          # scan on a stale-tip push. A conflicting rebase aborts and falls to the PR flow.
+          git pull --rebase origin main || git rebase --abort || true
           if git push origin HEAD:main; then
             echo "Pushed directly to main."; exit 0
           fi
@@ -97,12 +110,20 @@ jobs:
           MAIL_USER: ${{ secrets.MAIL_USER }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
-        run: python3 scripts/send_report.py || echo "::warning::email send failed (scan itself succeeded)"
+        run: |
+          # Brand the subject/attachment from config/brand.json (setup.md promises this).
+          # Never empty — the scripts treat "" as a real title, so fall back to Pulse on any failure.
+          export RADAR_TITLE="$(python3 -c "import json;b=json.load(open('config/brand.json'));print(b.get('product') or b.get('company') or 'Pulse')" 2>/dev/null || echo Pulse)"
+          python3 scripts/send_report.py || echo "::warning::email send failed (scan itself succeeded)"
 
       - name: Notify Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python3 scripts/notify_slack.py || echo "::warning::slack notify failed (scan itself succeeded)"
+          RADAR_REPO: ${{ github.repository }}   # link base for the report/digest/landscape links
+        run: |
+          # Brand the Slack title from config/brand.json — same derivation as the email step.
+          export RADAR_TITLE="$(python3 -c "import json;b=json.load(open('config/brand.json'));print(b.get('product') or b.get('company') or 'Pulse')" 2>/dev/null || echo Pulse)"
+          python3 scripts/notify_slack.py || echo "::warning::slack notify failed (scan itself succeeded)"
 
       - name: Heartbeat — scan alive (dead-man switch)
         env:

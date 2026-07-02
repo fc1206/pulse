@@ -1,5 +1,5 @@
 {
-  "_doc": "Axis config for the competitive map. Frank-editable. A fork's /setup overwrites this for its own market. score_axes.py reads it; positions are computed, never hand-placed. Keys in *_up/*_down are regexes (case-insensitive) matched against what+why_tier.",
+  "_doc": "Axis config for the competitive map. Owner-editable. A fork's /setup overwrites this for its own market. score_axes.py reads it; positions are computed, never hand-placed. Keys in *_up/*_down are regexes (case-insensitive) matched against what+why_tier.",
   "x_axis": {
     "label": "breadth",
     "low": "point tool",

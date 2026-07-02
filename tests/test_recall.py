@@ -13,8 +13,8 @@ a recall-critical channel is silently deleted or emptied:
 NOTE: this is the DETERMINISTIC half of recall — it proves the channels exist and
 are wired into rotation. The SUFFICIENT proof (remove a known company and watch
 live discovery re-find it) needs live web search and is a periodic integration
-check, documented in the project README — not a unit test. Green here does
-not by itself prove recall.
+check — the re-find probe in config/queries.md's status-sweep section — not a
+unit test. Green here does not by itself prove recall.
 """
 import json
 import re
@@ -97,3 +97,54 @@ def test_plan_run_sees_new_block(tmp_path):
     plan = json.loads(r.stdout)
     stale = {s["block"] for s in plan["stale_coverage"]}
     assert "I" in stale, "plan_run.py did not parse/track Block I in the coverage ledger"
+
+
+def test_seed_mode_plans_full_battery(tmp_path):
+    """--seed plans every block (the day-one deep map); normal mode still rotates —
+    including wraparound from a nonzero cursor, which rotation-at-cursor-0 can't see."""
+    root = tmp_path / "repo"
+    (root / "data").mkdir(parents=True)
+    (root / "config").mkdir()
+    (root / "data/registry.csv").write_text(
+        "domain,name,tier,cluster,status,stage,hq,founded,first_seen,last_checked,"
+        "what,why_tier,evidence_url,notes\n",
+        encoding="utf-8",
+    )
+    (root / "config/queries.md").write_text(
+        "# Q\n\n## Block A: a\n- q\n\n## Block B: b\n- q\n\n## Block C: c\n- q\n\n"
+        "## Block F: always\n- q\n\n## Block I: edge\n- q\n",
+        encoding="utf-8",
+    )
+
+    def set_cursor(cur):
+        (root / "data/state.json").write_text(json.dumps({
+            "schema": 1, "block_cursor": cur, "status_cursor": 0, "status_batch": 8,
+            "emphasis_per_run": 2, "last_run": "2026-06-10", "last_runner": "test", "coverage": {},
+        }), encoding="utf-8")
+
+    def plan(*flags):
+        r = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "plan_run.py"), "--root", str(root), *flags],
+            capture_output=True, text=True,
+        )
+        assert r.returncode == 0, r.stderr
+        return json.loads(r.stdout)
+
+    set_cursor(0)
+    seed = plan("--seed")
+    assert seed["seed"] is True, "--seed plan must mark itself as seed mode"
+    assert seed["emphasized_blocks"] == ["A", "B", "C", "I"], \
+        "--seed must plan every block (always-on F excluded from emphasis, run as usual)"
+
+    normal = plan()
+    assert normal["seed"] is False
+    assert normal["emphasized_blocks"] == ["A", "B"], "normal mode must still rotate"
+
+    # nonzero cursor: 3 over the 4 rotating blocks [A, B, C, I] must wrap to [I, A] —
+    # a cursor-0-only test would pass even if the modulo wraparound were broken
+    set_cursor(3)
+    wrapped = plan()
+    assert wrapped["emphasized_blocks"] == ["I", "A"], \
+        "block_cursor=3 over 4 rotating blocks must wrap around, not fall off the end"
+    assert plan("--seed")["emphasized_blocks"] == ["A", "B", "C", "I"], \
+        "--seed must plan the full battery regardless of the cursor position"

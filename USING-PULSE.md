@@ -16,18 +16,18 @@ Think of it as hiring a junior analyst who never sleeps, never forgets a competi
 
 A single, branded dashboard (a web page) that shows:
 
-- **What changed & what to do** — the 1–3 things that moved this week (a new entrant, a funding round, an acquisition, a pivot) and a specific action for each. This is the part you read first.
+- **What changed & what to do** — the one or two things that moved this week (a new entrant, a funding round, an acquisition, a pivot) with a specific action for each — or an honest "no actionable signal" when nothing did. This is the part you read first.
 - **The competitive map** — every rival placed by how broad and how active they are, so you can see who's crowding into your space.
 - **A spotlight** on the most important new competitor, with their funding, stage, location, and what makes them a threat.
 - **The full list** — a searchable table of every competitor, each with a live link to a source so you can trust it.
 
 Every claim is sourced to a real link. No made-up numbers.
 
-## Getting started (about 15 minutes, no technical skill)
+## Getting started (about 15 minutes of your attention, no technical skill)
 
 1. **Get your own copy.** On the Pulse page, click **"Use this template."** GitHub makes you a private copy in one click. *(You'll need a free GitHub account — like an email signup.)*
 2. **Have your assistant clone it and onboard you.** In Claude Code, Codex, or Cowork, say: **"clone `https://github.com/fc1206/pulse` and onboard me"** (use *your* copy's URL from step 1). Cloning a public repo needs no GitHub login and works on any assistant. *(Just want to try it first, before making your own copy? Clone the original public URL above — no account needed. If your assistant says the repo is "private" or 404s, that's its GitHub connector, not the repo — tell it to `clone` the URL.)*
-3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you and runs your first scan while you watch.
+3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you, then maps your whole landscape: your first scan runs the full search battery — typically 60–150 companies, category-dependent — in about 20–30 minutes. Go get a coffee; the map is waiting when you're back.
 4. **Read your first brief.** That's it — you have a working radar.
 
 You never open a code editor, a terminal, or a settings file. The chat is the whole interface.

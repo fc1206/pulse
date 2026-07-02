@@ -1,6 +1,15 @@
 {
-  "render_report.py": "1c9de60ebe73614caa5ebae9bbfbed6d44ac5e9cd1f3e00449f96894db39ad6b",
-  "score_axes.py": "db2208197ab1d6669886b96f1ad04acfcae06f7c23bb0e58d9029ed1316b815b",
-  "plan_run.py": "38269fe861f3b68ce33166eaa5ee51d23285cca4b846c0f7a05658aefd59be52",
-  "check_run_health.py": "861b981ce5d0ec9c705b6c84996ee7f11a09a11af85a511400e9f46bd8010409"
+  "files": {
+    "render_report.py": "1c9de60ebe73614caa5ebae9bbfbed6d44ac5e9cd1f3e00449f96894db39ad6b",
+    "score_axes.py": "21abc47cf0482c3e227a4175fe49c8922b1d849e1fc5a51b630c45c570c3b026",
+    "plan_run.py": "d18a59e9038734a413f2fb29067b54faf3a5b397d21a612f6a6bf8628b577f41",
+    "check_run_health.py": "861b981ce5d0ec9c705b6c84996ee7f11a09a11af85a511400e9f46bd8010409",
+    "validate_digest.py": "eefdf280257e009b19181dd00aaea236e52a4ef5ef4fe02e7ab5e16b6bf5e6b0",
+    "notify_slack.py": "252c6327caeb109fddf09a8bc9df75ee44e3ab83a6519389b5aeae9fedb72f0f",
+    "send_report.py": "0de69681b9501f054bbd9871150348a6d46f0e736d4d3c714770f6f47f6b5223",
+    "heartbeat.py": "e85f96da0f03a6f9fc8c01966b51db46195a58f18e4a9b17954626c7c0830c23"
+  },
+  "normalized": {
+    "validate_merge.py": "9c1953cf0805c37f97f5fb4c64e2578e78170c03b316a1f15fc104414d8c9026"
+  }
 }

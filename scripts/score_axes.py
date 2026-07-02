@@ -6,7 +6,7 @@ registry already holds (cluster + the `what`/`why_tier` text), so the map is a
 reproducible view of the data — never hand-placed. Same registry + config in → same
 map out.
 
-The axes and their signals live in **config/axes.json** (Frank-editable; a fork's
+The axes and their signals live in **config/axes.json** (owner-editable; a fork's
 `/setup` overwrites it for its own market), so this scorer is NOT hardcoded to any one
 landscape. If that file is missing, a minimal built-in fallback keeps it from crashing.
 

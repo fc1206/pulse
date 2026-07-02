@@ -3,11 +3,13 @@
 
 Env: MAIL_USER (gmail/workspace address), MAIL_PASSWORD (app password),
      MAIL_TO (required to send), MAIL_SMTP (default smtp.gmail.com), RADAR_TITLE (default "Pulse").
-Sends the report inline AND attached. Exits 0 silently if MAIL_PASSWORD unset.
+Sends the report inline AND attached. Exits 0 (skip, naming what's missing) if any
+of MAIL_USER/MAIL_PASSWORD/MAIL_TO is unset.
 """
 import csv
 import json
 import os
+import re
 import smtplib
 import ssl
 import sys
@@ -21,7 +23,8 @@ def main():
     to = os.environ.get("MAIL_TO", "")
     host = os.environ.get("MAIL_SMTP", "smtp.gmail.com")
     if not pw or not user or not to:
-        print("MAIL_USER/MAIL_PASSWORD not set — skipping email.")
+        missing = [n for n, v in (("MAIL_USER", user), ("MAIL_PASSWORD", pw), ("MAIL_TO", to)) if not v]
+        print(f"{'/'.join(missing)} not set — skipping email.")
         return
 
     root = Path(".")
@@ -51,8 +54,10 @@ def main():
                     "Open the attached report.html (or view inline in an HTML-capable client).")
     html = report.read_text(encoding="utf-8")
     msg.add_alternative(html, subtype="html")
+    # attachment name follows the fork's RADAR_TITLE, not a hardcoded product name
+    slug = re.sub(r"[^a-z0-9]+", "-", os.environ.get("RADAR_TITLE", "Pulse").lower()).strip("-")
     msg.add_attachment(html.encode("utf-8"), maintype="text", subtype="html",
-                       filename=f"radar-{run_date}.html")
+                       filename=f"{slug}-{run_date}.html")
 
     with smtplib.SMTP_SSL(host, 465, context=ssl.create_default_context()) as s:
         s.login(user, pw)
