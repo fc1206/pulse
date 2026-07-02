@@ -27,7 +27,7 @@ Every claim is sourced to a real link. No made-up numbers.
 
 1. **Get your own copy.** On the Pulse page, click **"Use this template."** GitHub makes you a private copy in one click. *(You'll need a free GitHub account — like an email signup.)*
 2. **Have your assistant clone it and onboard you.** In Claude Code, Codex, or Cowork, say: **"clone `https://github.com/fc1206/pulse` and onboard me"** (use *your* copy's URL from step 1). Cloning a public repo needs no GitHub login and works on any assistant. *(Just want to try it first, before making your own copy? Clone the original public URL above — no account needed. If your assistant says the repo is "private" or 404s, that's its GitHub connector, not the repo — tell it to `clone` the URL.)*
-3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you, then maps your whole landscape: your first scan runs the full search battery — typically 60–150 companies, category-dependent — in about 20–30 minutes. Go get a coffee; the map is waiting when you're back.
+3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you, then maps your whole landscape: your first scan runs the full search battery — typically 60–150 companies in a dense category, 20–60 in a leaner niche — in about 20–30 minutes. Go get a coffee; the map is waiting when you're back.
 4. **Read your first brief.** That's it — you have a working radar.
 
 You never open a code editor, a terminal, or a settings file. The chat is the whole interface.
