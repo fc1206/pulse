@@ -22,11 +22,11 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 
 ## Quick start
 
-**The easy way (recommended):** "Use this template" on GitHub → open your new repo in **Claude Code** or **Codex** → say *"onboard me"* (or run `/onboard`). The agent interviews you, runs your first scan — a deep map of your whole landscape, typically 60–150 companies (category-dependent) — and shows you a branded report — all in chat, no files touched. You only add an API key (one GitHub web page) when you want it to run on autopilot.
+**The easy way (recommended):** "Use this template" on GitHub → open your new repo in **Claude Code** or **Codex** → say *"onboard me"* (or run `/onboard`). The agent interviews you, runs your first scan — a deep map of your whole landscape, typically 60–150 companies in a dense category, 20–60 in a leaner niche — and shows you a branded report — all in chat, no files touched. You only add an API key (one GitHub web page) when you want it to run on autopilot.
 
 **Prefer to drive it yourself?**
 1. **Use this template** (fork on GitHub).
-2. **Teach it your market** — run `/setup` (a ~10-min interview that writes `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, then runs the deep-map first scan — the full query battery, typically 60–150 companies, category-dependent) or fill those files in by hand. `config/context.md` is the highest-leverage file: the sharper the lane, the sharper the brief.
+2. **Teach it your market** — run `/setup` (a ~10-min interview that writes `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, then runs the deep-map first scan — the full query battery, typically 60–150 companies in dense categories, 20–60 in niches) or fill those files in by hand. `config/context.md` is the highest-leverage file: the sharper the lane, the sharper the brief.
 3. **From then on: `/scan` on later days** (the deep map WAS your first scan — don't run a second one the same day). Each scan searches, scores against your rubric, merges into the registry, writes the digest, and renders `data/report.html`.
 4. **Autopilot (optional):** add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets and variables → Actions), then **uncomment the `schedule:` block** in `.github/workflows/scan.yml`. **Scheduling ships OFF** so a fresh fork never fails before it has a key. Optional: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`; emailed reports need all three of `MAIL_USER` / `MAIL_PASSWORD` / `MAIL_TO` (the send step skips quietly if any is missing).
 

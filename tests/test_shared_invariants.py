@@ -22,7 +22,10 @@ files have drifted.
 import ast
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((Path(__file__).parent / "shared_manifest.json").read_text(encoding="utf-8"))
@@ -56,6 +59,17 @@ def test_shared_files_match_manifest():
 
 
 def test_normalized_shared_files_match_manifest():
+    # ast.unparse formatting varies across Python versions, so the normalized hash is
+    # only comparable under the versions it was generated with (CI pins one of them).
+    # A fork owner on another Python must not see a false drift failure (dogfood
+    # 2026-07-02: Cowork sandbox Python failed this test on a pristine clone).
+    ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+    supported = MANIFEST.get("normalized_python", [])
+    if ver not in supported:
+        pytest.skip(
+            f"normalized pin generated under Python {'/'.join(supported)}; running {ver} "
+            "(ast.unparse output differs across versions — CI enforces this on a pinned version)"
+        )
     mismatched = []
     for name, expected in MANIFEST["normalized"].items():
         actual = normalized_sha256(ROOT / "scripts" / name)
