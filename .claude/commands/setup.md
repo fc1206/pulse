@@ -1,8 +1,8 @@
 ---
-description: First-time setup — interview the user and generate context.md, rubric.md, queries.md, and a seed registry for their market
+description: First-time setup — interview the user, generate context.md, rubric.md, queries.md, and run the deep-map first scan for their market
 ---
 
-Configure this radar for a new market. The machinery is generic; this command writes the *strategy brain* so the radar produces sharp, market-specific output instead of mush. Run it once, right after forking. ~15 minutes.
+Configure this radar for a new market. The machinery is generic; this command writes the *strategy brain* so the radar produces sharp, market-specific output instead of mush. Run it once, right after forking. ~10-minute interview, then a 20–30 minute (parallel) deep-map first scan.
 
 ## 1. Interview (ask these, conversationally — one or two at a time, not a wall)
 
@@ -27,26 +27,32 @@ If the user is unsure on the rubric axes, the competitors, or the core promise, 
 - **`config/brand.json`** — set `product` to the radar's name (e.g. `"<Company> Radar"`) so the report title and eyebrow read in their brand, not the default "Pulse"; `company` to their company name (this also sets the report's "built by" credit); `accent` (and `accent_2` if they gave one); `logo` (emoji or image URL, if any); and `theme` (`light` default). This brands the report, digest, and emails — the first thing they see.
 - **`config/axes.json`** — set the `x_axis`/`y_axis` `label`/`low`/`high` to their lane's two most decisive axes (from Q2). **Sync these three or the map is wrong — this is not optional:** (1) the cluster names in `config/clusters.json`, (2) the same names as `x_cluster_base`/`y_cluster_base` keys here, and (3) the axis signal regexes (`x_up`/`x_down`/`y_up`/`y_down`) rewritten to YOUR market's vocabulary — the defaults match the *old* software-AI market and **will mis-score yours, so do not ship them.** After editing, list the cluster names from all three places and confirm they match (this read-the-files check works headless and is the one that must pass; glance at the rendered map too only if you have a preview).
 
-## 3. Seed the registry (optional but recommended)
+## 3. First scan — the deep map (recommended)
 
-Turn the known competitors from Q3 into the first registry rows so the radar starts non-empty:
-1. For each known competitor, verify a live evidence URL (web fetch/search) and score it against the rubric you just wrote. Only register ones with a real URL; note unverifiable ones as `watch-unconfirmed`. **Verify harder** — while the source is open, make a genuine attempt to confirm `stage`/`hq`/`founded` from a primary source before writing `unknown`; the seed set is what the user reads first, so don't default its fields to blank. (`founded` is the *incorporation* year — never fabricate it: no primary source → `unknown`.)
-2. Write them to `runs/<today>/candidates.json` (schema in `CLAUDE.md`) plus a `run_meta.json`.
-3. Merge locally (this is an intentional local write, so set the override):
+The first scan maps their whole landscape: the **full query battery in one pass** — typically **60–150 companies, category-dependent** (never promise "hundreds"). Set the time expectation up front: ~20–30 minutes run in parallel, closer to an hour sequentially.
+
+1. Plan the full battery: `python3 scripts/plan_run.py --seed` — emits every block from `config/queries.md` (plan marked `"seed": true`) plus the known domains to dedupe against.
+2. Run it. **If the surface supports subagents / parallel tasks,** fan out one researcher per query block in parallel and merge their candidates (dedupe by domain) before validation. **If it doesn't,** run the blocks sequentially and say so honestly — never quietly skip blocks to hit an estimate. Fold the known competitors from Q3 into the sweep; verify those first, they anchor the rubric's calibration.
+3. **Acceptance standard — wider aperture, same bar, never a lower one:**
+   - **Live evidence URL mandatory** (web fetch/search) — no URL, no entry; unverifiable-but-plausible → `watch-unconfirmed` in run notes.
+   - Score every candidate against the rubric you just wrote — same tiers as any scheduled scan.
+   - **`founded`/`stage`/`hq` = `unknown` unless stated on the evidence page — never inferred.** (`founded` is the *incorporation* year; a guessed year is a bug, `unknown` is honest.) For the handful of rivals they named in Q3, verify harder — those rows anchor the report. Thin profiles elsewhere are expected on day one; the `/scan` enrichment quota fills them in over the next weeks.
+4. Write the results to `runs/<today>/candidates.json` (schema in `CLAUDE.md`) plus a `run_meta.json` whose `emphasized_blocks` lists every block the seed plan emitted — that stamps the coverage ledger for the whole battery.
+5. Merge locally (this is an intentional local write, so set the override):
    ```bash
    RADAR_ALLOW_WRITE=1 python3 scripts/validate_merge.py --run-dir runs/<today> --runner local
    ```
-4. **Decision digest** — this seed run IS the first scan, so give it a brief like any scan. Read `config/digest-spec.md`, write `runs/<today>/digest.md` in its exact format (the 0–5 most threatening seed entrants, or the NO ACTIONABLE SIGNAL sentinel), then validate:
+6. **Decision digest** — this seed run IS the first scan, so give it a brief like any scan. Read `config/digest-spec.md`, write `runs/<today>/digest.md` in its exact format (the 0–2 most threatening entrants on the map, or the NO ACTIONABLE SIGNAL sentinel), then validate (same override as the merge — it writes `data/DIGEST.md`):
    ```bash
-   python3 scripts/validate_digest.py --run-dir runs/<today>
+   RADAR_ALLOW_WRITE=1 python3 scripts/validate_digest.py --run-dir runs/<today>
    ```
-5. Render: `python3 scripts/render_report.py` (optionally `RADAR_TITLE` / `RADAR_REPO` env to brand the report + links).
+7. Render: `python3 scripts/render_report.py` (optionally `RADAR_TITLE` / `RADAR_REPO` env to brand the report + links).
 
 ## 4. Verify + hand off
 
 - Run `pip install -r requirements-dev.txt && pytest -q` — all green.
-- Tell the user what was written and show the seed count. The seed run you just merged + digested IS their first scan — **don't run a second `/scan` today** (a duplicate same-date run double-counts the seed and fakes the activity chart); the next scan is the next scheduled day, or whenever they ask. Proactively name the depth: this seed is a fast first pass (most likely rivals, no status sweep yet); a full `/scan` on the next scheduled day widens discovery and catches funding/acquisition events — say it, don't wait for them to ask. Show the branded deliverable at `data/report.html` via the environment's preview panel (IDE / Cowork), `open` it on a local Mac, or summarize the digest in chat if the session is headless. Don't fail on `open`.
+- Tell the user what was written and show how many companies landed on the map. The deep-map run you just merged + digested IS their first scan — **don't run a second `/scan` today** (a duplicate same-date run double-counts the seed and fakes the activity chart); the next scan is the next scheduled day, or whenever they ask. Proactively name the depth: the map is the full discovery sweep — what's thin on day one is metadata (`unknown` founded/HQ/stage wherever no source stated it); the scheduled `/scan`s enrich those profiles and run the status sweep that catches funding rounds and acquisitions — say it, don't wait for them to ask. Show the branded deliverable at `data/report.html` via the environment's preview panel (IDE / Cowork), `open` it on a local Mac, or summarize the digest in chat if the session is headless. Don't fail on `open`.
 - **Autopilot — the GUI-only key step.** To schedule it, they add their Anthropic key as a GitHub **secret** — a web page, never a terminal or editor. Derive `<owner>/<repo>` from `git remote get-url origin` (handle both `https://github.com/owner/repo` and `git@github.com:owner/repo.git`). **If origin isn't a GitHub URL** (local path / not pushed yet), autopilot can't run until the repo is on GitHub — help them create it at `https://github.com/new` and push first, or skip autopilot for now (manual `/scan` through you stays available, key-free); never fabricate the link. Otherwise build their exact deep link:
   `https://github.com/<owner>/<repo>/settings/secrets/actions/new?name=ANTHROPIC_API_KEY`
-  Tell them: open it → paste the key from console.anthropic.com → click **Add secret**. Then **you** uncomment the `schedule:` block in `.github/workflows/scan.yml` for them. (Optional secrets: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.)
+  Tell them: open it → paste the key from console.anthropic.com → click **Add secret**. Then **you** uncomment the `schedule:` block in `.github/workflows/scan.yml` for them. (Optional secrets: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`; emailed reports need all three of `MAIL_USER` / `MAIL_PASSWORD` / `MAIL_TO` — the send step skips quietly if any is missing.)
 - Remind them: `config/context.md` is the highest-leverage file — keep it current as their strategy moves, or the digest goes stale. Keep the repo **private** if their competitor set is sensitive.

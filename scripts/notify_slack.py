@@ -42,7 +42,9 @@ def digest_lines(entry: str):
     out = []
     for item in re.split(r"^### ", entry, flags=re.M)[1:]:
         head = re.sub(r"^\d+\.\s*", "", item.splitlines()[0]).strip()
-        why = re.search(r"\*\*Why it matters:\*\*\s*(.+)", item)
+        # label-tolerant: forks brand the why-label via config/brand.json why_label
+        # (e.g. "Why it matters to <company>:") — match any suffix before the colon
+        why = re.search(r"\*\*Why it matters[^:*]*:\*\*\s*(.+)", item)
         act = re.search(r"\*\*Action:\*\*\s*(.+)", item)
         out.append(f"*{head}*")
         if why:

@@ -6,7 +6,7 @@ and data/state.json. The agent writes runs/<date>/candidates.json (+ optional
 status_updates.json, run_meta.json); this script validates hard and merges, or
 exits 1 with actionable errors and writes NOTHING.
 
-Usage: python scripts/validate_merge.py --run-dir runs/2026-06-15 [--root .] [--runner github]
+Usage: python scripts/validate_merge.py --run-dir runs/2026-06-15 [--root .] [--runner github] [--validate-only]
 """
 import argparse
 import csv
@@ -145,6 +145,25 @@ def validate_updates(ups, by_domain, clusters):
     return errs
 
 
+def validate_meta(meta):
+    """run_meta.json fields are consumed after writes begin (changelog line, scanlog
+    entry, coverage stamp) — a wrong type there would TypeError mid-write and tear the
+    system of record, so types are checked here, in the validation phase."""
+    if not isinstance(meta, dict):
+        return ["run_meta.json: must be a JSON object"]
+    errs = []
+    for f in ("emphasized_blocks", "queries_run"):
+        if f in meta and not (isinstance(meta[f], list)
+                              and all(isinstance(x, str) for x in meta[f])):
+            errs.append(f"run_meta.json: {f} must be a list of strings")
+    if "candidates_evaluated" in meta and (isinstance(meta["candidates_evaluated"], bool)
+                                           or not isinstance(meta["candidates_evaluated"], int)):
+        errs.append("run_meta.json: candidates_evaluated must be an integer")
+    if "notes" in meta and not isinstance(meta["notes"], str):
+        errs.append("run_meta.json: notes must be a string")
+    return errs
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
@@ -154,24 +173,18 @@ def main():
                     help="apply status_updates as out-of-band data corrections: write the registry "
                          "and a correction-tagged changelog/scanlog entry, but do NOT add candidates, "
                          "advance scan cursors, or stamp coverage. Use for accuracy fixes between scans.")
+    ap.add_argument("--validate-only", action="store_true",
+                    help="load and validate everything (registry gate, run JSONs, clusters, "
+                         "LANDSCAPE anchors, state.json), then exit without writing anything. "
+                         "Needs no canonical-writer env var.")
     args = ap.parse_args()
-
-    # --- single canonical writer guard (divergence prevention) ---
-    # Only GitHub Actions (the canonical runner) may write the system of record. An
-    # automatic non-CI run writing here can fork the registry into divergent lineages
-    # that silently lose competitors. Intentional local maintenance must opt in
-    # explicitly (and `git pull` first).
-    if not os.environ.get("GITHUB_ACTIONS") and os.environ.get("RADAR_ALLOW_WRITE") != "1":
-        sys.exit(
-            "REFUSING TO WRITE: not the canonical runner (GitHub Actions).\n"
-            "Automatic non-CI runs must not write the registry — that can fork it into\n"
-            "divergent lineages and silently lose competitors. GitHub Actions is the sole\n"
-            "writer. For an intentional, pull-first local run, set RADAR_ALLOW_WRITE=1."
-        )
 
     root, run_dir = Path(args.root), Path(args.run_dir)
     run_date = date.today().isoformat()
 
+    # --- load + parse ALL inputs before the first write (cheap transactionality:
+    # a malformed input must abort while every system-of-record file is still
+    # untouched, never after the registry has already been rewritten) ---
     reg_path = root / "data/registry.csv"
     with reg_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -197,8 +210,29 @@ def main():
     ups = load_json(run_dir / "status_updates.json", default=[])
     meta = load_json(run_dir / "run_meta.json", default={})
 
+    land_path = root / "data/LANDSCAPE.md"
+    land = land_path.read_text(encoding="utf-8")
+    # anchors fail closed: without these, the changelog insert / scan stamp below would
+    # silently no-op and desync the narrative map from the registry.
+    if "## Changelog\n" not in land:
+        sys.exit("LANDSCAPE ERROR in data/LANDSCAPE.md: '## Changelog' heading missing — "
+                 "the changelog entry has nowhere to land. Restore the heading, then re-run.")
+    if not args.corrections_only and not re.search(r"\*\*Last scan:\*\* .*", land):
+        sys.exit("LANDSCAPE ERROR in data/LANDSCAPE.md: '**Last scan:**' watermark missing — "
+                 "the scan stamp has nowhere to land. Restore the watermark line, then re-run.")
+
+    st_path = root / "data/state.json"
+    st = None
+    if not args.corrections_only:  # a correction never touches scheduler state
+        try:
+            st = json.loads(st_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            sys.exit(f"STATE ERROR in data/state.json: {e}")
+
     clusters = load_clusters(root)
-    errs = validate_candidates(cands, set(by_domain), clusters) + validate_updates(ups, by_domain, clusters)
+    errs = (validate_candidates(cands, set(by_domain), clusters)
+            + validate_updates(ups, by_domain, clusters)
+            + validate_meta(meta))
     if args.corrections_only and cands:
         errs.append("--corrections-only run must not add candidates; new companies go through a scan, not a correction batch")
     if args.corrections_only and not ups:
@@ -206,6 +240,25 @@ def main():
     if errs:
         print("VALIDATION FAILED — fix and re-run:\n  - " + "\n  - ".join(errs))
         sys.exit(1)
+
+    if args.validate_only:
+        print("VALIDATION OK (no writes performed)")
+        return
+
+    # --- single canonical writer guard (divergence prevention) ---
+    # Only GitHub Actions (the canonical runner) may write the system of record. An
+    # automatic non-CI run writing here can fork the registry into divergent lineages
+    # that silently lose competitors. Intentional local maintenance must opt in
+    # explicitly (and `git pull` first).
+    # Placed after validation, before the first write: --validate-only and plain
+    # validation errors need no write authority; every write below is behind this gate.
+    if not os.environ.get("GITHUB_ACTIONS") and os.environ.get("RADAR_ALLOW_WRITE") != "1":
+        sys.exit(
+            "REFUSING TO WRITE: not the canonical runner (GitHub Actions).\n"
+            "Automatic non-CI runs must not write the registry — that can fork it into\n"
+            "divergent lineages and silently lose competitors. GitHub Actions is the sole\n"
+            "writer. For an intentional, pull-first local run, set RADAR_ALLOW_WRITE=1."
+        )
 
     # --- merge candidates ---
     added = []
@@ -250,9 +303,7 @@ def main():
             lines += [f"## MOVED TO TIER 1: {name}", f"- {summary}", ""]
         (run_dir / "ESCALATION.md").write_text("\n".join(lines), encoding="utf-8")
 
-    # --- changelog (+ last-scan stamp, scans only) in LANDSCAPE.md ---
-    land_path = root / "data/LANDSCAPE.md"
-    land = land_path.read_text(encoding="utf-8")
+    # --- changelog (+ last-scan stamp, scans only) in LANDSCAPE.md (loaded + anchor-checked above) ---
     kind = "correction" if args.corrections_only else "scan"
     entry = [f"### {run_date} — {kind} ({args.runner})"]
     if new_t1:
@@ -286,10 +337,9 @@ def main():
         if meta.get("notes"):
             f.write(f"- Notes: {meta['notes']}\n")
 
-    # --- advance cursors + stamp coverage (scans only; a correction must not move the scheduler) ---
+    # --- advance cursors + stamp coverage (scans only; a correction must not move the scheduler;
+    # state parsed fail-closed above, before the first write) ---
     if not args.corrections_only:
-        st_path = root / "data/state.json"
-        st = json.loads(st_path.read_text(encoding="utf-8"))
         st["block_cursor"] = st.get("block_cursor", 0) + st.get("emphasis_per_run", 2)
         st["status_cursor"] = st.get("status_cursor", 0) + st.get("status_batch", 8)
         st["last_run"], st["last_runner"] = run_date, args.runner

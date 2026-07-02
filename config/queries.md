@@ -5,7 +5,7 @@ Edit freely — this file is the harness's search brain. `scripts/plan_run.py` p
 **Two lanes, tuned independently so precision never costs breadth:**
 
 - **Lane 1 — precision (Blocks A–E, G):** source-targeted queries that reliably surface real companies. Favor `site:` and named venues; lift exact domains from result pages.
-- **Lane 2 — recall safety-net (Block F always-on + Block H regional + Block I edge-expansion):** the wide net that catches low-footprint, wrong-vocabulary, non-US entrants — the costly-miss class. This lane is *allowed* to be noisy; that's its job. **Never trim it for cleanliness.**
+- **Lane 2 — recall safety-net (Block F always-on + Block H regional + Block I edge-expansion):** the wide net that catches low-footprint, wrong-vocabulary, non-US entrants — the costly-miss class. This lane is *allowed* to be noisy; that's its job. **Never trim it for cleanliness.** **Retirement rule:** a recall query that returns only already-tracked companies is the net *holding*, not saturation — retire a Lane-2 or wildcard query only when it returns nothing in-lane at all across two consecutive runs.
 
 **Per run:** Block F always (pick ~4) + the two emphasized blocks from `plan_run.py` (pick ~5 each) + 2 wildcards you compose + the status sweep. `plan_run.py` emits a coverage ledger and flags any block gone stale; fold the stalest into a wildcard. Breadth is guaranteed by cadence + the ledger, not per-run volume.
 
@@ -54,6 +54,7 @@ Edit freely — this file is the harness's search brain. `scripts/plan_run.py` p
 ## Block G: funding + launch venues — Lane 1 (source-targeted)
 
 - site:producthunt.com {category}
+- site:producthunt.com/products {category}   ← product pages persist after launch feeds rotate; a company that launches once gets exactly one window in the feeds
 - site:news.ycombinator.com Show HN {category}
 - {category} seed OR "series A" raised {month} {year}
 - {category} acquisition OR acquired {year}
@@ -77,6 +78,8 @@ Every player maps its own rivals. Compare-list directories and competitors' own 
 - "alternatives to" {competitor} (-site:g2.com)
 - {competitor}/alternatives OR /vs — fetch the competitor's own comparison page and harvest every rival it names
 - crunchbase OR tracxn "similar companies" {category}
+- {category} self-hosted OR "private cloud" OR on-prem OR "in your VPC"   ← deployment-model axis; established players who sell on *how it deploys* are invisible to feature vocabulary
+- site:theresanaiforthat.com OR "AI tools directory" {category} alternatives   ← directories index companies whose launch window has closed
 
 ## Status sweep (every run)
 
@@ -84,6 +87,8 @@ For each of the ~8 round-robin targets from `plan_run.py`:
 - `"{name}" funding OR acquired OR acquisition OR shutdown OR pivot {year}`
 
 Material changes (new round, acquisition, death, repositioning) → `status_updates.json`.
+
+**Re-find probe (1 per run):** pick one tracked Tier-1 (rotate); read its live homepage vocabulary, then check whether at least one battery query would still surface it today. If none would, add a query in its *current* vocabulary to the matching block and log it in the tuning log. Companies reposition after you register them — this catches the drift before it becomes a silent recall hole.
 
 ## Known noise — skip fast (NOT a block; do not re-evaluate unless trajectory changes)
 

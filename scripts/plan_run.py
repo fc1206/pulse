@@ -4,7 +4,11 @@ and the set of known domains. Pure function of state.json + queries.md + registr
 Does NOT mutate state — validate_merge.py advances cursors only after a successful merge,
 so a failed run safely repeats the same plan.
 
-Usage: python scripts/plan_run.py [--root .]
+--seed plans the day-one deep map: every block in config/queries.md at once instead
+of the normal rotation (the always-on block still runs as usual). The plan is marked
+"seed": true so the run can label itself; all other plumbing is unchanged.
+
+Usage: python scripts/plan_run.py [--root .] [--seed]
 """
 import argparse
 import csv
@@ -28,6 +32,8 @@ def load_blocks(queries_md: Path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".", help="repo root")
+    ap.add_argument("--seed", action="store_true",
+                    help="plan the full battery (every block) — the day-one deep map")
     args = ap.parse_args()
     root = Path(args.root)
 
@@ -35,9 +41,12 @@ def main():
     blocks = load_blocks(root / "config/queries.md")
     rotating = [b for b in blocks if b != ALWAYS_BLOCK]
 
-    n = state.get("emphasis_per_run", 2)
-    cur = state.get("block_cursor", 0) % len(rotating)
-    emphasized = [rotating[(cur + i) % len(rotating)] for i in range(n)]
+    if args.seed:
+        emphasized = list(rotating)  # deep map: the whole battery in one pass
+    else:
+        n = state.get("emphasis_per_run", 2)
+        cur = state.get("block_cursor", 0) % len(rotating)
+        emphasized = [rotating[(cur + i) % len(rotating)] for i in range(n)]
 
     with (root / "data/registry.csv").open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
@@ -78,6 +87,7 @@ def main():
 
     print(json.dumps({
         "run_date": today.isoformat(),
+        "seed": args.seed,
         "always_block": ALWAYS_BLOCK,
         "emphasized_blocks": emphasized,
         "status_targets": targets,

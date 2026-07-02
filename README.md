@@ -22,17 +22,17 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 
 ## Quick start
 
-**The easy way (recommended):** "Use this template" on GitHub → open your new repo in **Claude Code** or **Codex** → say *"onboard me"* (or run `/onboard`). The agent interviews you, runs your first scan, and shows you a branded report — all in chat, no files touched. You only add an API key (one GitHub web page) when you want it to run on autopilot.
+**The easy way (recommended):** "Use this template" on GitHub → open your new repo in **Claude Code** or **Codex** → say *"onboard me"* (or run `/onboard`). The agent interviews you, runs your first scan — a deep map of your whole landscape, typically 60–150 companies (category-dependent) — and shows you a branded report — all in chat, no files touched. You only add an API key (one GitHub web page) when you want it to run on autopilot.
 
 **Prefer to drive it yourself?**
 1. **Use this template** (fork on GitHub).
-2. **Teach it your market** — run `/setup` (a ~10-min interview that writes `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, and a seed registry) or fill those files in by hand. `config/context.md` is the highest-leverage file: the sharper the lane, the sharper the brief.
-3. **Run a scan:** `/scan` — searches, scores against your rubric, merges into the registry, writes the digest, and renders `data/report.html`.
-4. **Autopilot (optional):** add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets and variables → Actions), then **uncomment the `schedule:` block** in `.github/workflows/scan.yml`. **Scheduling ships OFF** so a fresh fork never fails before it has a key. Optional: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`.
+2. **Teach it your market** — run `/setup` (a ~10-min interview that writes `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, then runs the deep-map first scan — the full query battery, typically 60–150 companies, category-dependent) or fill those files in by hand. `config/context.md` is the highest-leverage file: the sharper the lane, the sharper the brief.
+3. **From then on: `/scan` on later days** (the deep map WAS your first scan — don't run a second one the same day). Each scan searches, scores against your rubric, merges into the registry, writes the digest, and renders `data/report.html`.
+4. **Autopilot (optional):** add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets and variables → Actions), then **uncomment the `schedule:` block** in `.github/workflows/scan.yml`. **Scheduling ships OFF** so a fresh fork never fails before it has a key. Optional: `SLACK_WEBHOOK_URL`, `HEARTBEAT_URL`; emailed reports need all three of `MAIL_USER` / `MAIL_PASSWORD` / `MAIL_TO` (the send step skips quietly if any is missing).
 
 ## How it stays trustworthy
 
-- **One canonical writer.** Only the scripts write the system of record, and `validate_merge.py` refuses to write unless it's the canonical runner (GitHub Actions) or you pass `RADAR_ALLOW_WRITE=1` for an intentional, pull-first local run. This prevents parallel runners from silently diverging the registry.
+- **One canonical writer.** Only the scripts write the system of record, and both `validate_merge.py` and `validate_digest.py` refuse to write unless they're on the canonical runner (GitHub Actions) or you pass `RADAR_ALLOW_WRITE=1` for an intentional, pull-first local run. This prevents parallel runners from silently diverging the registry.
 - **Every company needs a live evidence URL** — no URL, no entry.
 - **Anti-slop digest** — the validator rejects uncited claims, banned filler phrases, and lazy actions.
 - **Tested machinery** — `pip install -r requirements-dev.txt && pytest -q`.

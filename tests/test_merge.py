@@ -396,3 +396,117 @@ def test_formula_leading_domain_rejected(tmp_path):
     r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
     assert r.returncode == 1
     assert "invalid domain" in r.stdout
+
+
+def snapshot_sor(root: Path):
+    """Byte snapshot of every system-of-record file, for zero-write assertions."""
+    return {p: (root / p).read_bytes() for p in
+            ("data/registry.csv", "data/LANDSCAPE.md", "data/SCANLOG.md", "data/state.json")}
+
+
+def test_validate_only_valid_input_writes_nothing(tmp_path):
+    """--validate-only on a valid run: exit 0 with the OK line, every system-of-record file
+    byte-unchanged — and no canonical-writer env var required (validation needs no write
+    authority, so clean=True must not trip the guard)."""
+    root = make_repo(tmp_path)
+    cands = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))
+    run_dir = write_run(root, candidates=cands)
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root),
+                   "--validate-only", clean=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "VALIDATION OK (no writes performed)" in r.stdout
+    assert "REFUSING TO WRITE" not in (r.stdout + r.stderr)
+    assert snapshot_sor(root) == before
+
+
+def test_validate_only_invalid_input_reports_errors(tmp_path):
+    """--validate-only on invalid input: exit 1 with the validation error, zero writes,
+    still no env var required."""
+    root = make_repo(tmp_path)
+    cand = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))[0] | {
+        "tier": "4",
+    }
+    run_dir = write_run(root, candidates=[cand])
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root),
+                   "--validate-only", clean=True)
+    assert r.returncode == 1
+    assert "VALIDATION FAILED" in r.stdout and "tier" in r.stdout
+    assert snapshot_sor(root) == before
+
+
+def test_malformed_state_fails_before_any_write(tmp_path):
+    """state.json is parsed up front and fail-closed: on a write-armed run, a corrupt
+    scheduler state must abort BEFORE the registry is rewritten (read-everything-before-
+    writing-anything), not crash after the system of record already changed."""
+    root = make_repo(tmp_path)
+    (root / "data/state.json").write_text("{not json", encoding="utf-8")
+    cands = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))
+    run_dir = write_run(root, candidates=cands)
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode != 0
+    assert "STATE ERROR in data/state.json" in (r.stdout + r.stderr)
+    assert "Traceback" not in (r.stdout + r.stderr)
+    assert snapshot_sor(root) == before
+
+
+def test_missing_changelog_heading_fails_closed(tmp_path):
+    """A LANDSCAPE.md without the '## Changelog' anchor must abort before any write —
+    the old str.replace() silently dropped the changelog entry."""
+    root = make_repo(tmp_path)
+    (root / "data/LANDSCAPE.md").write_text(
+        "# Landscape\n\n**Last scan:** 2026-06-10 (baseline)\n", encoding="utf-8")
+    cands = json.loads((FIXTURES / "low_footprint_candidate.json").read_text(encoding="utf-8"))
+    run_dir = write_run(root, candidates=cands)
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode != 0
+    assert "## Changelog" in (r.stdout + r.stderr)
+    assert snapshot_sor(root) == before
+
+
+def test_missing_scan_watermark_fails_closed_on_scan_only(tmp_path):
+    """A scan needs the '**Last scan:**' watermark (the old re.sub silently no-opped
+    without it); a corrections-only run never stamps it, so it must not require it."""
+    root = make_repo(tmp_path)
+    (root / "data/LANDSCAPE.md").write_text(
+        "# Landscape\n\n## Changelog\n\n### 2026-06-10 — Baseline established\nSeed.\n",
+        encoding="utf-8")
+    run_dir = write_run(root, candidates=[])
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode != 0
+    assert "Last scan" in (r.stdout + r.stderr)
+    assert snapshot_sor(root) == before
+    # a correction is not a scan — it must succeed without the watermark
+    run_dir2 = write_run(root, candidates=None, updates=[{
+        "domain": "beta.example", "fields_changed": {"founded": "2020"},
+        "change_summary": "accuracy fix", "evidence_url": "https://example.com/about",
+    }], day="2026-06-18")
+    r2 = run_script("validate_merge.py", "--run-dir", str(run_dir2), "--root", str(root),
+                    "--runner", "audit", "--corrections-only")
+    assert r2.returncode == 0, r2.stdout + r2.stderr
+
+
+def test_null_run_meta_field_fails_in_validation_before_any_write(tmp_path):
+    """run_meta.json fields are consumed after writes begin (changelog line, scanlog
+    entry, coverage stamp): a null emphasized_blocks must fail in the VALIDATION phase
+    — exit 1, system of record byte-unchanged, no Traceback — never TypeError after
+    the registry and LANDSCAPE were already rewritten (torn system of record)."""
+    root = make_repo(tmp_path)
+    bad_meta = {"runner": "test", "emphasized_blocks": None,
+                "queries_run": ["q1"], "candidates_evaluated": 0}
+    run_dir = write_run(root, candidates=[], meta=bad_meta)
+    before = snapshot_sor(root)
+    r = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root))
+    assert r.returncode == 1
+    assert "run_meta.json: emphasized_blocks must be a list of strings" in r.stdout
+    assert "Traceback" not in (r.stdout + r.stderr)
+    assert snapshot_sor(root) == before
+    # same check must also fire under --validate-only (no write authority needed)
+    r2 = run_script("validate_merge.py", "--run-dir", str(run_dir), "--root", str(root),
+                    "--validate-only", clean=True)
+    assert r2.returncode == 1 and "emphasized_blocks must be a list of strings" in r2.stdout
+    assert snapshot_sor(root) == before
