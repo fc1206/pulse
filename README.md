@@ -14,7 +14,7 @@ _Built by the team at [Astell](https://www.astell.ai)._
 
 Not a one-shot "analyze my competitors" prompt. Pulse accumulates across runs, dedupes by domain, flags new entrants, funding, acquisitions, and pivots, and ends each scan with a short decision digest backed by an anti-slop validator. The model only does the narrow judgment (find and score). Deterministic Python does everything that touches the record, which is why it runs on any model.
 
-![The competitive map Pulse renders: 64 companies plotted by breadth and action, every position computed from registry scores, never hand-placed](docs/demo-map.png)
+![The competitive map Pulse renders: 64 companies plotted by breadth and action, every position computed from registry scores, never hand-placed](docs/demo-map.png?v=3)
 
 ## What a scan produces
 
