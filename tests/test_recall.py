@@ -6,9 +6,9 @@ is the breadth of the query battery, not the merge plumbing. These tests fail if
 a recall-critical channel is silently deleted or emptied:
 
 - Block F  — always-on lookalikes/alternatives/vs (every entrant writes a vs-X page)
-- Block H  — geographic / non-US (the literal low-footprint gap: Melbourne, no US press)
-- Block I  — edge-expansion: harvest the competitor sets G2/rivals already publish
-- Block B  — data-intelligence vocabulary (low-footprint's own cluster)
+- Block H  — geographic / non-US (the literal low-footprint gap: regional, no US press)
+- Block I  — edge-expansion: harvest the competitor sets directories/rivals already publish
+- Block B  — adjacent / wrong-vocabulary channel (the low-footprint class's home)
 
 NOTE: this is the DETERMINISTIC half of recall — it proves the channels exist and
 are wired into rotation. The SUFFICIENT proof (remove a known company and watch

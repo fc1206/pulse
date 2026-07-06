@@ -16,18 +16,18 @@
 
 ## Clusters
 
-Default set (the machine source is `config/clusters.json` — edit that file to match your market, no code change):
+Default set (the machine source is `config/clusters.json` — edit that file to match your market, no code change). The defaults are market-agnostic archetypes:
 
-`direct` | `chief-of-staff` | `data-intel` | `incumbent` | `employee-assist` | `infra` | `vertical`
+`direct` (same promise, same buyer) | `adjacent` (neighboring lane, wrong vocabulary — the easiest miss) | `substitute` (different mechanics, same job: DIY, in-house, services) | `incumbent` (big suites that could bundle the job) | `infra` (what your rivals build on) | `vertical` (industry-sliced players)
 
 Rename these to the meaningful sub-groups of YOUR market (e.g. for a payments product: `processors`, `orchestration`, `fraud`, `ledger`, `incumbent`, `vertical`). Set them in `config/clusters.json` (validate_merge reads that) — no code edit.
 
 ## Calibration examples (replace with your own — these are neutral stubs)
 
 - **<A direct rival>** → Tier 1 / direct. Same product, same buyer.
-- **<A wrong-vocabulary rival>** → Tier 2 / data-intel. Sells your promise in different words; the class that's easiest to miss. (Make this one real and specific — it's your canonical "don't miss this" calibration.)
-- **<An agent/platform rival>** → Tier 1 / direct. Different vocabulary, same mechanics. Vocabulary never overrides mechanics.
-- **<A bounded analyst tool>** → Tier 2 / data-intel.
+- **<A wrong-vocabulary rival>** → Tier 2 / adjacent. Sells your promise in different words; the class that's easiest to miss. (Make this one real and specific — it's your canonical "don't miss this" calibration.)
+- **<A same-mechanics rival in different clothes>** → Tier 1 / direct. Different vocabulary, same mechanics. Vocabulary never overrides mechanics.
+- **<A bounded adjacent tool>** → Tier 2 / adjacent.
 - **<A single-feature tool>** → Tier 3 / infra or vertical.
 - **<A wedge product trending toward you>** → Tier 1. Trajectory counts, not just today's perimeter.
 

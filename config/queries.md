@@ -27,23 +27,23 @@ The wrong-vocabulary lane: the neighboring category your buyers cross-shop, in I
 - "{a phrase buyers use for the adjacent lane}" startup
 - {adjacent category} tool {year}
 
-## Block C: workflow / assistant vocabulary — Lane 1
+## Block C: buyer-workflow vocabulary — Lane 1 (how the buyer names the JOB, not your category)
 
-- AI assistant for {category} teams
-- AI agent for {category} startup
-- proactive AI tool {category}
+- {the job-to-be-done} software {year}
+- {the job-to-be-done} for {buyer} teams
+- new {the job-to-be-done} tool {year}
 
-## Block D: agent / platform vocabulary — Lane 1
+## Block D: platform / ecosystem vocabulary — Lane 1
 
-- {category} AI agent platform startup
-- "all your tools" {category} assistant
-- multiplayer AI agents {category}
+- {category} platform startup
+- all-in-one {category} suite
+- {category} integrations OR API platform startup
 
-## Block E: architectural primitives — Lane 1
+## Block E: how-it's-built vocabulary — Lane 1 (the architecture words insiders use)
 
-- "{category}" graph OR layer startup
-- {category} memory layer enterprise
-- {category} context platform funding
+- "{architecture term insiders use}" startup
+- {category} {architecture term} funding {year}
+- {category} built on {enabling technology} {year}
 
 ## Block F: lookalikes + alternatives + ego (Lane 2 — ALWAYS RUN)
 
