@@ -1,5 +1,7 @@
 # Pulse
 
+[![tests](https://github.com/fc1206/pulse/actions/workflows/test.yml/badge.svg)](https://github.com/fc1206/pulse/actions/workflows/test.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 > ### 🤖 New here? Tell **Claude Code**, **Codex**, or **Cowork** to *"clone https://github.com/fc1206/pulse and onboard me."*
 > Cloning a public repo needs no GitHub login and works on any surface. To keep your radar, click **"Use this template"** on GitHub first and clone *your* copy instead. The agent handles the rest in chat. The only thing you ever do by hand is paste an API key into a GitHub page, and only if you want autopilot.
 > *(Assistant says the repo is "private" or 404s? That's its GitHub connector, not the repo. Tell it to `clone` the URL.)*
@@ -11,6 +13,8 @@ A competitor radar you own. A small repo plus an AI agent that scans the web twi
 _Built by the team at [Astell](https://www.astell.ai)._
 
 Not a one-shot "analyze my competitors" prompt. Pulse accumulates across runs, dedupes by domain, flags new entrants, funding, acquisitions, and pivots, and ends each scan with a short decision digest backed by an anti-slop validator. The model only does the narrow judgment (find and score). Deterministic Python does everything that touches the record, which is why it runs on any model.
+
+![The competitive map Pulse renders: 64 companies plotted by breadth and action, every position computed from registry scores, never hand-placed](docs/demo-map.png)
 
 ## What a scan produces
 
