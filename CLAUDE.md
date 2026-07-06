@@ -18,7 +18,7 @@ A competitor-landscape radar. Runs `/scan` on a schedule to catch every new or r
 
 `runs/<date>/candidates.json` — array of:
 ```json
-{"name": "", "domain": "", "tier": "1|2|3", "cluster": "direct|chief-of-staff|data-intel|incumbent|employee-assist|infra|vertical", "status": "active|acquired|dead|feature", "stage": "stealth|bootstrapped|seed|series-a|series-b|series-c|late-stage|public|acquired|dead|unknown", "hq": "City, CC", "founded": "YYYY|unknown", "what": "one factual line", "why_tier": "one line vs rubric", "evidence_url": "https://...", "notes": "optional; verification caveats"}
+{"name": "", "domain": "", "tier": "1|2|3", "cluster": "<a cluster name from config/clusters.json>", "status": "active|acquired|dead|feature", "stage": "stealth|bootstrapped|seed|series-a|series-b|series-c|late-stage|public|acquired|dead|unknown", "hq": "City, CC", "founded": "YYYY|unknown", "what": "one factual line", "why_tier": "one line vs rubric", "evidence_url": "https://...", "notes": "optional; verification caveats"}
 ```
 (Clusters live in `config/clusters.json` — edit that file to retarget your market; no code edit. `config/rubric.md` documents them in prose.)
 

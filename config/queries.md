@@ -18,12 +18,14 @@ Edit freely — this file is the harness's search brain. `scripts/plan_run.py` p
 - {category} platform new company
 - "{category}" software competitors
 
-## Block B: data vocabulary — Lane 1
+## Block B: adjacent vocabulary — Lane 1 (rewrite wholesale — these are example SHAPES from the original market)
 
-- conversational BI startup {year}
-- AI data analyst startup
-- enterprise data intelligence platform
-- "chat with your data" startup
+The wrong-vocabulary lane: the neighboring category your buyers cross-shop, in ITS words, not yours. The costliest misses hide here. Replace every line's subject with your market's adjacent lane — filling placeholders alone is not enough for this block.
+
+- {adjacent category} startup {year}
+- {adjacent category} platform new
+- "{a phrase buyers use for the adjacent lane}" startup
+- {adjacent category} tool {year}
 
 ## Block C: workflow / assistant vocabulary — Lane 1
 

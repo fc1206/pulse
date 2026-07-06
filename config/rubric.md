@@ -44,3 +44,5 @@ Precision is about what gets *registered*, never about what gets *considered* â€
 ## What does NOT belong in the registry
 
 Pure model providers, tutorials, agencies/consultancies, open-source libraries without a company, products with no working website AND no funding/launch evidence (note them as `watch-unconfirmed` instead).
+
+**This list is market-specific â€” invert it where your market demands.** If your market IS agencies, consultancies, or open-source projects, the line above would exclude your entire registry: rewrite this section for your lane during `/setup`, never keep it verbatim.
