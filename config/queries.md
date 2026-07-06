@@ -1,6 +1,6 @@
 # Query Battery
 
-Edit freely — this file is the harness's search brain. `scripts/plan_run.py` parses block IDs from `## Block X:` headers; keep that format (one capital letter, then a colon — extra text after the colon is fine). `{competitor}`, `{category}`, `{year}`, `{month}` are placeholders you fill with your own market's terms (or let `/setup` write them for you).
+Edit freely — this file is the harness's search brain. `scripts/plan_run.py` parses block IDs from `## Block X:` headers; keep that format (one capital letter, then a colon — extra text after the colon is fine). `{competitor}`, `{category}`, `{year}`, `{month}` are placeholders you fill with your own market's terms (or let `/setup` write them for you) — some blocks carry their own (`{adjacent category}`, `{your-product}`); every `{...}` token is yours to replace.
 
 **Two lanes, tuned independently so precision never costs breadth:**
 

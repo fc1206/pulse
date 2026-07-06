@@ -2,7 +2,7 @@
 
 A competitor-landscape radar. Runs `/scan` on a schedule to catch every new or repositioning competitor. Built to be executed by ANY model — all judgment is narrowly scoped, all plumbing is deterministic.
 
-**First-time setup:** run `/onboard` — it interviews the owner, captures their brand, runs the first scan, and shows them the report, all in chat (it calls `/setup` internally and does every edit for them; the owner may be non-technical). Or run `/setup` alone to just (re)generate `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, and a seed registry.
+**First-time setup:** run `/onboard` — it interviews the owner, captures their brand, runs the first scan, and shows them the report, all in chat (it calls `/setup` internally and does every edit for them; the owner may be non-technical). Or run `/setup` alone to just (re)generate `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, the retargeted `config/clusters.json` + `config/axes.json`, and a seed registry.
 
 ## Hard rules (non-negotiable, any model)
 
