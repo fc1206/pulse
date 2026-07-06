@@ -2,7 +2,7 @@
 
 A competitor-landscape radar. Runs `/scan` on a schedule to catch every new or repositioning competitor. Built to be executed by ANY model — all judgment is narrowly scoped, all plumbing is deterministic.
 
-**First-time setup:** run `/onboard` — it interviews the owner, captures their brand, runs the first scan, and shows them the report, all in chat (it calls `/setup` internally and does every edit for them; the owner may be non-technical). Or run `/setup` alone to just (re)generate `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, and a seed registry.
+**First-time setup:** run `/onboard` — it interviews the owner, captures their brand, runs the first scan, and shows them the report, all in chat (it calls `/setup` internally and does every edit for them; the owner may be non-technical). Or run `/setup` alone to just (re)generate `config/context.md`, `config/rubric.md`, `config/queries.md`, `config/brand.json`, the retargeted `config/clusters.json` + `config/axes.json`, and a seed registry.
 
 ## Hard rules (non-negotiable, any model)
 
@@ -18,7 +18,7 @@ A competitor-landscape radar. Runs `/scan` on a schedule to catch every new or r
 
 `runs/<date>/candidates.json` — array of:
 ```json
-{"name": "", "domain": "", "tier": "1|2|3", "cluster": "direct|chief-of-staff|data-intel|incumbent|employee-assist|infra|vertical", "status": "active|acquired|dead|feature", "stage": "stealth|bootstrapped|seed|series-a|series-b|series-c|late-stage|public|acquired|dead|unknown", "hq": "City, CC", "founded": "YYYY|unknown", "what": "one factual line", "why_tier": "one line vs rubric", "evidence_url": "https://...", "notes": "optional; verification caveats"}
+{"name": "", "domain": "", "tier": "1|2|3", "cluster": "<a cluster name from config/clusters.json>", "status": "active|acquired|dead|feature", "stage": "stealth|bootstrapped|seed|series-a|series-b|series-c|late-stage|public|acquired|dead|unknown", "hq": "City, CC", "founded": "YYYY|unknown", "what": "one factual line", "why_tier": "one line vs rubric", "evidence_url": "https://...", "notes": "optional; verification caveats"}
 ```
 (Clusters live in `config/clusters.json` — edit that file to retarget your market; no code edit. `config/rubric.md` documents them in prose.)
 

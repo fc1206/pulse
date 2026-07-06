@@ -19,6 +19,8 @@ The digest answers one question: **given this run's findings, what should we do 
 **Action:** <imperative, concrete, 2–8-week-shaped, names a deliverable or decision>
 ```
 
+(If `config/brand.json` sets `why_label`, that exact label replaces `**Why it matters:**` above — the validator lints for the branded label, so use it verbatim.)
+
 0–2 items. Zero findings → a single line after the header: `NO ACTIONABLE SIGNAL — <one honest line on why this run's findings don't clear the bar>`. This outcome is respected; forced items are not. The sentinel is the EXPECTED output when nothing clears the bar — a digest history that never fires it is a calibration smell, not a success.
 
 ## Hard rules (linted)

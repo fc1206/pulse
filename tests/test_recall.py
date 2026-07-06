@@ -6,9 +6,9 @@ is the breadth of the query battery, not the merge plumbing. These tests fail if
 a recall-critical channel is silently deleted or emptied:
 
 - Block F  — always-on lookalikes/alternatives/vs (every entrant writes a vs-X page)
-- Block H  — geographic / non-US (the literal low-footprint gap: Melbourne, no US press)
-- Block I  — edge-expansion: harvest the competitor sets G2/rivals already publish
-- Block B  — data-intelligence vocabulary (low-footprint's own cluster)
+- Block H  — geographic / non-US (the literal low-footprint gap: regional, no US press)
+- Block I  — edge-expansion: harvest the competitor sets directories/rivals already publish
+- Block B  — adjacent / wrong-vocabulary channel (the low-footprint class's home)
 
 NOTE: this is the DETERMINISTIC half of recall — it proves the channels exist and
 are wired into rotation. The SUFFICIENT proof (remove a known company and watch
@@ -48,16 +48,23 @@ def test_block_f_has_alternatives_and_vs():
 
 
 def test_block_h_covers_non_us():
-    body = BLOCKS["H"].lower()
-    regions = ("australia", "india", "europe", "israel", "singapore", "uk", "germany", "new zealand")
-    assert any(r in body for r in regions), "Block H lost non-US geographic coverage (the low-footprint gap)"
+    # Structural, not vocabulary-pinned: a fork tailors regions to ITS market
+    # (LATAM, MENA, ...), so asserting specific region names would fail a
+    # correctly tailored battery. The guard is that the channel still carries
+    # multiple query lines — deleting or emptying it is what must trip this.
+    lines = [l for l in BLOCKS["H"].splitlines() if l.strip().startswith("- ")]
+    assert len(lines) >= 2, "Block H lost its geographic recall queries (the low-footprint gap)"
 
 
 def test_block_i_edge_expansion_signatures():
+    # Tolerant of per-market directory tailoring (Clutch/Behance for agencies,
+    # G2/Capterra for SaaS): any site:-targeted harvest, an alternatives/compare
+    # channel, or an explicit directory line satisfies the edge-expansion intent.
     body = BLOCKS["I"].lower()
-    signatures = ("g2", "capterra", "sourceforge", "compare", "alternatives", "similar companies")
-    hits = [s for s in signatures if s in body]
-    assert len(hits) >= 2, f"Block I missing edge-expansion signatures (found {hits})"
+    lines = [l for l in BLOCKS["I"].splitlines() if l.strip().startswith("- ")]
+    assert len(lines) >= 2, "Block I lost its edge-expansion queries"
+    assert ("site:" in body) or ("alternatives" in body) or ("compare" in body) or ("directory" in body), \
+        "Block I lost its directory/compare-list harvesting signature"
 
 
 def test_block_b_is_substantive():

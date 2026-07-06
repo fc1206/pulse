@@ -1,59 +1,55 @@
 {
-  "_doc": "Axis config for the competitive map. Owner-editable. A fork's /setup overwrites this for its own market. score_axes.py reads it; positions are computed, never hand-placed. Keys in *_up/*_down are regexes (case-insensitive) matched against what+why_tier.",
+  "_doc": "Axis config for the competitive map. Owner-editable. A fork's /setup overwrites this for its own market. score_axes.py reads it; positions are computed, never hand-placed. Keys in *_up/*_down are regexes (case-insensitive) matched against what+why_tier. The defaults below are market-agnostic archetype signals — /setup MUST rewrite the axis labels and signal regexes in YOUR market's vocabulary, and keep cluster keys in step with config/clusters.json (the sync rule in setup.md).",
   "x_axis": {
     "label": "breadth",
-    "low": "point tool",
-    "high": "whole-company context layer"
+    "low": "point solution",
+    "high": "full suite"
   },
   "y_axis": {
-    "label": "action",
-    "low": "retrieves / answers",
-    "high": "acts / executes"
+    "label": "autonomy",
+    "low": "informs",
+    "high": "does the work"
   },
   "x_cluster_base": {
     "incumbent": 70,
-    "direct": 68,
-    "chief-of-staff": 50,
-    "employee-assist": 46,
-    "infra": 42,
-    "data-intel": 36,
-    "vertical": 28
+    "direct": 60,
+    "adjacent": 50,
+    "substitute": 45,
+    "infra": 40,
+    "vertical": 30
   },
   "x_default_base": 45,
   "x_up": {
-    "company brain|context layer|whole[- ]company|org(anization)?[- ]wide|across (the )?(your )?(entire )?(company|org)": 14,
-    "cross[- ]tool|every (work )?tool|all (your|company) tools|across .{0,12}(saas|work) tools": 12,
-    "\\b(100|150|200|400|1000|4000|6000|10,?000)\\+?\\b|50\\+ (connectors|integrations|tools)|connectors? (across|to)": 9,
-    "knowledge graph|context graph|work graph|enterprise search": 6
+    "platform|suite|all[- ]in[- ]one|end[- ]to[- ]end|full[- ]stack": 12,
+    "integrat|connectors?|plugs? into|works with .{0,20}tools": 10,
+    "\\b(50|100|150|200|400|1000)\\+? (integrations|connectors|tools|sources)": 9,
+    "enterprise[- ]wide|org(anization)?[- ]wide|across (the )?(entire )?(company|org|business)": 8
   },
   "x_down": {
-    "\\b(email|inbox)\\b|meeting (notes|assistant|intelligence)|notetaker|scheduling|calendar": 14,
-    "warehouse|\\bsql\\b|\\bbi\\b|semantic layer|data catalog|analytics|dashboards?": 12,
-    "ticket|helpdesk|\\bitsm\\b|\\besm\\b|customer (support|service)|cx\\b": 10,
-    "market intel|finance docs|commerce|outward[- ]facing": 10
+    "point (tool|solution)|single[- ]purpose|niche|only (does|for)|just (a|for)": 12,
+    "add[- ]on|plug[- ]?in|extension|feature of": 10,
+    "one (team|task|channel|workflow)": 8
   },
   "x_up_cap": 28,
   "x_down_cap": 30,
   "y_cluster_base": {
-    "direct": 44,
-    "employee-assist": 44,
+    "direct": 45,
+    "adjacent": 42,
     "incumbent": 42,
-    "chief-of-staff": 40,
+    "substitute": 38,
     "infra": 34,
-    "vertical": 32,
-    "data-intel": 30
+    "vertical": 32
   },
   "y_default_base": 36,
   "y_up": {
-    "take(s)? action|acts? (across|on)|\\bexecut|autonomous(ly)?|complete(s)? (work|tasks)|does (the )?work|run(s)? (scheduled|ops|operations|the )": 17,
-    "\\bagent(s|ic)?\\b|multi[- ]agent|orchestrat": 10,
-    "workflow|automat(e|ion)|read[- ](and[- ])?write|write action|builds? (dashboards|apps|internal)": 10,
-    "proactiv|open[- ]loop|follow[- ]through|assigns? owners?|tracks? (commitments|decisions|to completion)": 9
+    "automat(e|es|ion)|autonomous(ly)?|\\bagent(s|ic)?\\b|orchestrat": 14,
+    "take(s)? action|executes?|does (the )?work|completes? (tasks|work)": 12,
+    "proactiv|schedul(es|ed)|triggers?|runs? (on its own|automatically)": 9
   },
   "y_down": {
-    "notetaker|note[- ]taking|meeting (notes|assistant)": 12,
-    "\\bdashboards?\\b|\\bbi\\b|analytics|reporting|insights": 9,
-    "catalog|lineage|metadata|semantic layer": 9
+    "report(s|ing)?|dashboards?|analytics|insights|monitor(s|ing)?": 10,
+    "search|look[- ]?up|answers? questions|q&a|assistant": 9,
+    "read[- ]only|informational|alerts? only": 8
   },
   "y_up_cap": 34,
   "y_down_cap": 24,

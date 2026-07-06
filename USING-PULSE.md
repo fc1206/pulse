@@ -25,7 +25,7 @@ Every claim is sourced to a real link. No made-up numbers.
 
 ## Getting started (about 15 minutes of your attention, no technical skill)
 
-1. **Get your own copy.** On the Pulse page, click **"Use this template."** GitHub makes you a private copy in one click. *(You'll need a free GitHub account — like an email signup.)*
+1. **Get your own copy.** On the Pulse page, click **"Use this template."** One important click on that screen: **choose "Private"** — GitHub preselects Public, and your competitor list belongs in a private repo. *(You'll need a free GitHub account — like an email signup.)*
 2. **Have your assistant clone it and onboard you.** In Claude Code, Codex, or Cowork, say: **"clone `https://github.com/fc1206/pulse` and onboard me"** (use *your* copy's URL from step 1). Cloning a public repo needs no GitHub login and works on any assistant. *(Just want to try it first, before making your own copy? Clone the original public URL above — no account needed. If your assistant says the repo is "private" or 404s, that's its GitHub connector, not the repo — tell it to `clone` the URL.)*
 3. **Answer a few questions in the chat** — what your company does, who you compete with, what your market is called. The assistant writes everything for you, then maps your whole landscape: your first scan runs the full search battery — typically 60–150 companies in a dense category, 20–60 in a leaner niche — in about 20–30 minutes. Go get a coffee; the map is waiting when you're back.
 4. **Read your first brief.** That's it — you have a working radar.
@@ -65,7 +65,7 @@ There are no per-seat fees, no minimums, and no surprise charges — you're payi
 
 ## Privacy
 
-Your radar lives in **your** GitHub account, and the dashboard is a file in your own repository. Keep the repository **private** and your competitor list, your strategy, and your notes stay entirely yours. Pulse never publishes anything publicly or sends your data anywhere — delivery is files in your repo, full stop.
+Your radar lives in **your** GitHub account, and the dashboard is a file in your own repository. Keep the repository **private** (step 1's "Private" click) and your competitor list, your strategy, and your notes stay entirely yours. Pulse never publishes anything publicly, and nothing leaves your repo unless you turn on the optional Slack or email delivery — otherwise it's files in your repo, full stop.
 
 ## In one line
 

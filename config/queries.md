@@ -1,6 +1,6 @@
 # Query Battery
 
-Edit freely — this file is the harness's search brain. `scripts/plan_run.py` parses block IDs from `## Block X:` headers; keep that format (one capital letter, then a colon — extra text after the colon is fine). `{competitor}`, `{category}`, `{year}`, `{month}` are placeholders you fill with your own market's terms (or let `/setup` write them for you).
+Edit freely — this file is the harness's search brain. `scripts/plan_run.py` parses block IDs from `## Block X:` headers; keep that format (one capital letter, then a colon — extra text after the colon is fine). `{competitor}`, `{category}`, `{year}`, `{month}` are placeholders you fill with your own market's terms (or let `/setup` write them for you) — some blocks carry their own (`{adjacent category}`, `{your-product}`); every `{...}` token is yours to replace.
 
 **Two lanes, tuned independently so precision never costs breadth:**
 
@@ -18,30 +18,32 @@ Edit freely — this file is the harness's search brain. `scripts/plan_run.py` p
 - {category} platform new company
 - "{category}" software competitors
 
-## Block B: data vocabulary — Lane 1
+## Block B: adjacent vocabulary — Lane 1 (rewrite wholesale — these are example SHAPES from the original market)
 
-- conversational BI startup {year}
-- AI data analyst startup
-- enterprise data intelligence platform
-- "chat with your data" startup
+The wrong-vocabulary lane: the neighboring category your buyers cross-shop, in ITS words, not yours. The costliest misses hide here. Replace every line's subject with your market's adjacent lane — filling placeholders alone is not enough for this block.
 
-## Block C: workflow / assistant vocabulary — Lane 1
+- {adjacent category} startup {year}
+- {adjacent category} platform new
+- "{a phrase buyers use for the adjacent lane}" startup
+- {adjacent category} tool {year}
 
-- AI assistant for {category} teams
-- AI agent for {category} startup
-- proactive AI tool {category}
+## Block C: buyer-workflow vocabulary — Lane 1 (how the buyer names the JOB, not your category)
 
-## Block D: agent / platform vocabulary — Lane 1
+- {the job-to-be-done} software {year}
+- {the job-to-be-done} for {buyer} teams
+- new {the job-to-be-done} tool {year}
 
-- {category} AI agent platform startup
-- "all your tools" {category} assistant
-- multiplayer AI agents {category}
+## Block D: platform / ecosystem vocabulary — Lane 1
 
-## Block E: architectural primitives — Lane 1
+- {category} platform startup
+- all-in-one {category} suite
+- {category} integrations OR API platform startup
 
-- "{category}" graph OR layer startup
-- {category} memory layer enterprise
-- {category} context platform funding
+## Block E: how-it's-built vocabulary — Lane 1 (the architecture words insiders use)
+
+- "{architecture term insiders use}" startup
+- {category} {architecture term} funding {year}
+- {category} built on {enabling technology} {year}
 
 ## Block F: lookalikes + alternatives + ego (Lane 2 — ALWAYS RUN)
 
