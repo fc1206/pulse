@@ -40,6 +40,6 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 ## Notes
 
 - Defaults (tiers, clusters, query blocks) are tuned for software and AI markets. Retarget yours by editing config only. Set your clusters in `config/clusters.json` and tune `config/rubric.md`, never Python or tests.
-- Cost is roughly the model plus web-search spend of two scans a week, typically $5–15 a month on the default model (a few dollars on a cheaper one — set a `SCAN_MODEL` repo variable).
-- Requires Python 3.10+ (stock macOS ships 3.9 — install a current Python from python.org first).
+- Cost is roughly the model plus web-search spend of two scans a week, typically $5–15 a month on the default model (a few dollars on a cheaper one, set via a `SCAN_MODEL` repo variable).
+- Requires Python 3.10+. Stock macOS ships 3.9, so install a current Python from python.org first.
 - MIT licensed, provided as-is. A template to build on, not a supported product.
