@@ -188,9 +188,12 @@ def map_data(rows, root, run_date):
         pts.sort(key=lambda p: (round(math.hypot(100 - p["x"], 100 - p["y"]), 2), p["t"], p["n"]))
         named = pts[:FRONTIER_K]
         faint = [{"x": p["x"], "y": p["y"], "t": p["t"]} for p in pts[FRONTIER_K:]]
-        return named, faint, len(faint), cfg["x_axis"], cfg["y_axis"]
+        # The "racing to the corner" story is a claim about the data, so only make it
+        # when the data does: a quarter of the field actually in the top-right quadrant.
+        convergent = bool(pts) and sum(1 for p in pts if p["x"] > 50 and p["y"] > 50) / len(pts) >= 0.25
+        return named, faint, len(faint), cfg["x_axis"], cfg["y_axis"], convergent
     except Exception:
-        return [], [], 0, {"low": "narrow", "high": "broad"}, {"low": "retrieves", "high": "acts"}
+        return [], [], 0, {"low": "narrow", "high": "broad"}, {"low": "retrieves", "high": "acts"}, False
 
 
 def render(root, out):
@@ -290,17 +293,21 @@ def render(root, out):
         <div class="lab" style="margin:18px 0 6px">Evidence</div>{ev_html}</div>"""
 
     # ---- map (Frontier) ----
-    named, faint, nfaint, xa, ya = map_data(rows, root, run_date)
-    morechip = f'<div class="mapmore">+{nfaint} more racing in</div>' if nfaint else ""
+    named, faint, nfaint, xa, ya, convergent = map_data(rows, root, run_date)
+    more_word = "racing in" if convergent else "in the field"
+    morechip = f'<div class="mapmore">+{nfaint} more {more_word}</div>' if nfaint else ""
+    headline = ("Everyone is racing to the same corner." if convergent
+                else "The field, mapped on your two axes.")
+    tr_label = "convergence" if convergent else f'{esc(ya["high"])} · broad'
     map_section = ""
     if named or faint:
         map_section = (
             '<div class="mapwrap"><div class="eyebrow">The competitive map</div>'
-            '<h1 style="font-size:24px;margin:7px 0 4px">Everyone is racing to the same corner.</h1>'
+            f'<h1 style="font-size:24px;margin:7px 0 4px">{headline}</h1>'
             f'<p class="sub" style="font-size:14px">Scored, not hand-placed — {esc(xa["low"])}→{esc(xa["high"])} × {esc(ya["low"])}→{esc(ya["high"])}. '
-            f'The {len(named)} nearest the corner are named; the rest are the field — active Tier 1/2 only. Hover any dot.</p>'
+            f'The {len(named)} nearest the top-right corner are named; the rest are the field — active Tier 1/2 only. Hover any dot.</p>'
             '<div class="map" id="pmap"><div class="qtr"></div><div class="qv"></div><div class="qh"></div>'
-            '<div class="ql tr">convergence</div>'
+            f'<div class="ql tr">{tr_label}</div>'
             f'<div class="ql tl">{esc(ya["high"])} · narrow</div><div class="ql bl">narrow · {esc(ya["low"])}</div><div class="ql br">broad</div>'
             f'<div class="axx">{esc(xa["low"])}&nbsp;&nbsp;───→&nbsp;&nbsp;{esc(xa["high"])}</div>'
             f'<div class="axy">{esc(ya["low"])}&nbsp;───→&nbsp;{esc(ya["high"])}</div>{morechip}</div></div>')
@@ -515,8 +522,24 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
    +(ev.indexOf('http')===0?'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><a href="'+jesc(ev)+'" target="_blank" rel="noopener">'+jesc(evdom)+'</a> — primary source</div>':'')
    +'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20"/></svg><a href="'+jesc(site)+'" target="_blank" rel="noopener">'+jesc(c.domain)+'</a> — product site</div></div>';
  }
- function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
+ // Zoom both axes to the data range (with margin) so no market renders as a blob
+ // in a corner of a mostly-empty canvas. 50 always stays inside the domain, so the
+ // quadrant crosshair keeps its meaning; positions remain computed, never hand-placed.
+ var ALLPTS=named.concat(faint);
+ function dom(get){var lo=100,hi=0;ALLPTS.forEach(function(d){var v=get(d);if(v<lo)lo=v;if(v>hi)hi=v;});
+  if(!ALLPTS.length){lo=0;hi=100;}
+  return [Math.min(lo-6,44),Math.max(hi+6,56)];}
+ var DX=dom(function(d){return d.x;}),DY=dom(function(d){return d.y;});
+ var PADL=100,PADR=26,PADT=34,PADB=52;
+ function PX(d,W){return PADL+(d.x-DX[0])/(DX[1]-DX[0])*(W-PADL-PADR);}
+ function PY(d,H){return PADT+(1-(d.y-DY[0])/(DY[1]-DY[0]))*(H-PADT-PADB);}
  function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
+  // anchor the quadrant crosshair, convergence tint, and rotated caption at score-50
+  var cx=PX({x:50},W),cy=PY({y:50},H);
+  var qv=map.querySelector('.qv'),qh=map.querySelector('.qh'),qtr=map.querySelector('.qtr'),axy=map.querySelector('.axy');
+  if(qv)qv.style.left=cx+'px';if(qh)qh.style.top=cy+'px';
+  if(qtr){qtr.style.left=cx+'px';qtr.style.width=Math.max(0,W-cx)+'px';qtr.style.height=Math.max(0,cy)+'px';}
+  if(axy)axy.style.top=cy+'px';
   faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
   var ns=named.map(function(d){return {d:d,x:PX(d,W),y:PY(d,H)};});
   ns.forEach(function(n){var b=document.createElement('a');b.className='bub';b.href='https://'+n.d.d;b.target='_blank';b.rel='noopener';b.setAttribute('aria-label',n.d.n+' — Tier '+n.d.t);
