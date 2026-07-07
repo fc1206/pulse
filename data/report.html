@@ -136,8 +136,24 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
    +(ev.indexOf('http')===0?'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><a href="'+jesc(ev)+'" target="_blank" rel="noopener">'+jesc(evdom)+'</a> — primary source</div>':'')
    +'<div class="ev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20"/></svg><a href="'+jesc(site)+'" target="_blank" rel="noopener">'+jesc(c.domain)+'</a> — product site</div></div>';
  }
- function PX(d,W){return (50+(d.x-50)*0.62)/100*W;} function PY(d,H){return (50-(d.y-50)*0.64)/100*H;}
+ // Zoom both axes to the data range (with margin) so no market renders as a blob
+ // in a corner of a mostly-empty canvas. 50 always stays inside the domain, so the
+ // quadrant crosshair keeps its meaning; positions remain computed, never hand-placed.
+ var ALLPTS=named.concat(faint);
+ function dom(get){var lo=100,hi=0;ALLPTS.forEach(function(d){var v=get(d);if(v<lo)lo=v;if(v>hi)hi=v;});
+  if(!ALLPTS.length){lo=0;hi=100;}
+  return [Math.min(lo-6,44),Math.max(hi+6,56)];}
+ var DX=dom(function(d){return d.x;}),DY=dom(function(d){return d.y;});
+ var PADL=100,PADR=26,PADT=34,PADB=52;
+ function PX(d,W){return PADL+(d.x-DX[0])/(DX[1]-DX[0])*(W-PADL-PADR);}
+ function PY(d,H){return PADT+(1-(d.y-DY[0])/(DY[1]-DY[0]))*(H-PADT-PADB);}
  function build(){if(!map)return;var W=map.clientWidth,H=map.clientHeight;if(!W)return setTimeout(build,60);
+  // anchor the quadrant crosshair, convergence tint, and rotated caption at score-50
+  var cx=PX({x:50},W),cy=PY({y:50},H);
+  var qv=map.querySelector('.qv'),qh=map.querySelector('.qh'),qtr=map.querySelector('.qtr'),axy=map.querySelector('.axy');
+  if(qv)qv.style.left=cx+'px';if(qh)qh.style.top=cy+'px';
+  if(qtr){qtr.style.left=cx+'px';qtr.style.width=Math.max(0,W-cx)+'px';qtr.style.height=Math.max(0,cy)+'px';}
+  if(axy)axy.style.top=cy+'px';
   faint.forEach(function(d){var el=document.createElement('span');el.className='fd fd'+d.t;el.style.left=PX(d,W)+'px';el.style.top=PY(d,H)+'px';map.appendChild(el);});
   var ns=named.map(function(d){return {d:d,x:PX(d,W),y:PY(d,H)};});
   ns.forEach(function(n){var b=document.createElement('a');b.className='bub';b.href='https://'+n.d.d;b.target='_blank';b.rel='noopener';b.setAttribute('aria-label',n.d.n+' — Tier '+n.d.t);
