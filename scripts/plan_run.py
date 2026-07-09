@@ -10,6 +10,8 @@ of the normal rotation (the always-on block still runs as usual). The plan is ma
 
 Usage: python scripts/plan_run.py [--root .] [--seed]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import json

@@ -7,6 +7,8 @@ this run; falls back to the raw new-company list otherwise.
 Env: SLACK_WEBHOOK_URL (required to send; exits 0 quietly if unset).
 Usage: python3 scripts/notify_slack.py [--dry-run]
 """
+from __future__ import annotations
+
 import csv
 import json
 import os

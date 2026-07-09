@@ -3,7 +3,7 @@
     "name": "Low-Footprint Test Co",
     "domain": "https://www.lowprofile-regression.example/",
     "tier": "2",
-    "cluster": "data-intel",
+    "cluster": "adjacent",
     "status": "active",
     "stage": "bootstrapped",
     "hq": "Somewhere, XX",

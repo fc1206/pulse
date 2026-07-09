@@ -20,6 +20,8 @@ Wiring (scan.yml): ping success at the very end of a healthy run, and ping
 `--status fail` from the `if: failure()` step so the monitor distinguishes
 "ran and failed" from "never ran".
 """
+from __future__ import annotations
+
 import argparse
 import json
 import os

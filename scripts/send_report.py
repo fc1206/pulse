@@ -6,6 +6,8 @@ Env: MAIL_USER (gmail/workspace address), MAIL_PASSWORD (app password),
 Sends the report inline AND attached. Exits 0 (skip, naming what's missing) if any
 of MAIL_USER/MAIL_PASSWORD/MAIL_TO is unset.
 """
+from __future__ import annotations
+
 import csv
 import json
 import os

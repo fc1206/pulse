@@ -18,6 +18,8 @@ also drops data/axes.json for the renderer.
 
   python3 scripts/score_axes.py [--root .] [--config config/axes.json] [--write] [--all]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import json
@@ -29,10 +31,10 @@ from pathlib import Path
 BUILTIN = {
     "x_axis": {"label": "breadth", "low": "narrow", "high": "broad"},
     "y_axis": {"label": "action", "low": "retrieves", "high": "acts"},
-    "x_cluster_base": {"incumbent": 70, "direct": 68, "chief-of-staff": 50,
-                       "employee-assist": 46, "infra": 42, "data-intel": 36, "vertical": 28},
-    "y_cluster_base": {"direct": 44, "employee-assist": 44, "incumbent": 42, "chief-of-staff": 40,
-                       "infra": 34, "vertical": 32, "data-intel": 30},
+    "x_cluster_base": {"incumbent": 70, "direct": 60, "adjacent": 50,
+                       "substitute": 45, "infra": 40, "vertical": 30},
+    "y_cluster_base": {"direct": 45, "adjacent": 42, "incumbent": 42,
+                       "substitute": 38, "infra": 34, "vertical": 32},
     "x_default_base": 45, "y_default_base": 36,
     "x_up": {}, "x_down": {}, "y_up": {}, "y_down": {},
     "x_up_cap": 28, "x_down_cap": 30, "y_up_cap": 34, "y_down_cap": 24,
