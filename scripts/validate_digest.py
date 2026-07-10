@@ -8,6 +8,8 @@ Usage:
   python3 scripts/validate_digest.py --backfill [--root .]
   python3 scripts/validate_digest.py --resolve 2026-06-15.1 --status done [--note "..."]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import json

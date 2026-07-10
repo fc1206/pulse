@@ -8,6 +8,8 @@ exits 1 with actionable errors and writes NOTHING.
 
 Usage: python scripts/validate_merge.py --run-dir runs/2026-06-15 [--root .] [--runner github] [--validate-only]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import io
@@ -22,7 +24,7 @@ TIERS = {"1", "2", "3"}
 # The valid cluster set is MARKET-SPECIFIC and lives in config/clusters.json so a fork
 # retargets by editing config, never this code. This is only the fallback when that file
 # is absent (older forks / the test harness's throwaway repos).
-DEFAULT_CLUSTERS = {"direct", "chief-of-staff", "data-intel", "incumbent", "employee-assist", "infra", "vertical"}
+DEFAULT_CLUSTERS = {"direct", "adjacent", "substitute", "incumbent", "infra", "vertical"}
 STATUSES = {"active", "acquired", "dead", "feature"}
 REQUIRED = ["name", "domain", "tier", "cluster", "status", "stage", "hq", "founded", "what", "why_tier", "evidence_url"]
 FIELDNAMES = ["domain", "name", "tier", "cluster", "status", "stage", "hq", "founded",

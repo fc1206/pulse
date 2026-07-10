@@ -16,6 +16,8 @@ verified zero from a broken scan.
 
 Usage: python3 scripts/check_run_health.py --run-dir runs/2026-06-23 [--root .] [--expect-date YYYY-MM-DD]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import json

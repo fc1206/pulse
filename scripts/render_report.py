@@ -8,6 +8,8 @@ decision digest, and the full registry) deterministically from the registry. Bra
 
 Usage: python3 scripts/render_report.py [--root .] [--out data/report.html]
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import html
@@ -15,7 +17,6 @@ import json
 import math
 import os
 import re
-from datetime import date
 from pathlib import Path
 
 import score_axes  # sibling in scripts/; computes the map coordinates
@@ -204,7 +205,9 @@ def render(root, out):
     # The report's display name: the configured product, falling back to the company when a fork
     # hasn't set `product` (so the eyebrow/title read in the user's brand, not the default "Pulse").
     radar_name = product if product and product != "Pulse" else (company or "Pulse")
-    run_date = state.get("last_run", date.today().isoformat())
+    # The template ships state.json with last_run: "" (key present), so .get's default
+    # never fires — an empty date must render an honest zero-state, not a dangling "scan ".
+    run_date = state.get("last_run") or ""
     tiers = {t: [r for r in rows if r["tier"] == t] for t in ("1", "2", "3")}
     new_rows = [r for r in rows if r.get("first_seen") == run_date]
     if rows and len(new_rows) >= len(rows):
@@ -366,7 +369,9 @@ def render(root, out):
         "ACCENT": accent, "ACC2": accent2, "ACCSOFT": _rgba(accent, .10), "ACCSOFT2": _rgba(accent, .07),
         "ACC1DOT": _rgba(accent, .10), "ACC2DOT": _rgba(accent2, .13),
         "EYEBROW": esc(f"{radar_name} · competitive radar"), "LOGO": logo_svg,
-        "HEADLINE": esc(headline), "BUILTBY": builtby, "RUNDATE": esc(run_date),
+        "HEADLINE": esc(headline), "BUILTBY": builtby,
+        "RUNDATE": esc(run_date) if run_date else "no scans yet",
+        "SCANCHIP": f"scan {esc(run_date)}" if run_date else "no scans yet",
         "NET30": ("+" + str(net30)) if net30 else "0", "TRACKLINE": track_line, "NEWLINE": new_line,
         "XLABELS": xlabels, "NALL": str(len(rows)), "NT1": str(len(tiers["1"])),
         "NT2": str(len(tiers["2"])), "NNEW": str(len(new_rows)), "CROWS": crows,
@@ -465,7 +470,7 @@ a.tdom{color:var(--flame);font-size:11.5px;text-decoration:none;}.twhat{max-widt
 <div class="brand">{{LOGO}}<span class="eyebrow">{{EYEBROW}}</span></div>
 <h1>{{HEADLINE}}</h1>
 <p class="sub">Every entrant tiered, sourced to a live link, and told straight.{{BUILTBY}}</p>
-<div class="statline"><span><b>{{NALL}}</b> tracked</span><span><b style="color:{{ACCENT}}">{{NNEW}}</b> new this scan</span><span><b style="color:{{ACCENT}}">{{NT1}}</b> Tier&nbsp;1</span><span><b>{{NT2}}</b> Tier&nbsp;2</span><span>scan {{RUNDATE}}</span></div>
+<div class="statline"><span><b>{{NALL}}</b> tracked</span><span><b style="color:{{ACCENT}}">{{NNEW}}</b> new this scan</span><span><b style="color:{{ACCENT}}">{{NT1}}</b> Tier&nbsp;1</span><span><b>{{NT2}}</b> Tier&nbsp;2</span><span>{{SCANCHIP}}</span></div>
 
 <div class="grid">
   <div class="col">
