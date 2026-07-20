@@ -1,0 +1,5 @@
+# Force LF in every working tree. The cross-repo tripwire (tests/shared_manifest.json)
+# byte-hashes the shared scripts, so a default Windows checkout (core.autocrlf=true)
+# rewriting files to CRLF would fail all 8 pins on a pristine clone.
+* text=auto eol=lf
+*.png binary

@@ -70,5 +70,6 @@ If a query class clearly over/under-performed, append one dated line to the tuni
 
 - **CI (GitHub Actions):** stop here — the workflow commits, pushes, notifies Slack, and opens any escalation issue. **This is the only runner that writes `main`.**
 - **Local:** do NOT commit or merge to `main`. Both `validate_merge.py` and `validate_digest.py` refuse to write unless `RADAR_ALLOW_WRITE=1` (the single-writer guard that stops parallel runners from diverging the registry — see CLAUDE.md rule 7). A local run is for testing only; let GitHub Actions produce the canonical scan. If you must reconcile, `git pull` then union through `validate_merge.py` with `RADAR_ALLOW_WRITE=1`, never `git reset`.
+  **Manual-mode exception:** if the repo has NO active schedule (the `schedule:` block in `.github/workflows/scan.yml` is still commented out), there is no parallel runner to diverge from — you are the only writer, exactly like the seed scan. A pull-first `RADAR_ALLOW_WRITE=1` merge and push is sanctioned in that mode, so a no-autopilot user's manual scans genuinely persist. The moment autopilot is enabled, this exception ends and CI is the sole writer again.
 
 Never edit `data/registry.csv`, `data/SCANLOG.md`, `data/state.json`, `data/DIGEST.md`, or the LANDSCAPE changelog by hand — only the scripts write those.

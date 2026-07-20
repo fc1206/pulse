@@ -141,7 +141,9 @@ def digest_items(digest):
     for chunk in re.split(r"^### ", block, flags=re.M)[1:]:
         head = re.sub(r"^\d+\.\s*", "", chunk.splitlines()[0].strip())
         def f(name):
-            fm = re.search(rf"\*\*{name}:\*\*\s*(.*?)(?=\n\*\*|\Z)", chunk, re.S)
+            # brand.json's why_label may extend the middle label ("Why it matters to Acme:"),
+            # so match any suffix between the base label and the colon.
+            fm = re.search(rf"\*\*{name}[^*\n]*:\*\*\s*(.*?)(?=\n\*\*|\Z)", chunk, re.S)
             return fm.group(1).strip().replace("\n", " ") if fm else ""
         items.append({"head": head, "signal": f("Signal"), "why": f("Why it matters"), "action": f("Action")})
     return ddate, items
@@ -386,7 +388,8 @@ def render(root, out):
     for k, v in subs.items():
         doc = doc.replace("{{" + k + "}}", v)
     out.write_text(doc, encoding="utf-8")
-    print(f"report.html: {len(rows)} rows, {len(new_rows)} new, spotlight={sp['name'] if sp else None!r} → {out}")
+    # ASCII arrow: Windows pipes stdout as cp1252, where U+2192 raises UnicodeEncodeError.
+    print(f"report.html: {len(rows)} rows, {len(new_rows)} new, spotlight={sp['name'] if sp else None!r} -> {out}")
 
 
 TEMPLATE = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">

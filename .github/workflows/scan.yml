@@ -42,26 +42,47 @@ jobs:
           fi
           npm install -g @anthropic-ai/claude-code
           set -o pipefail   # without this, the tee pipe would mask a claude failure as success
+          # stream-json keeps a live event log AND ends with a machine-readable result line
+          # carrying total_cost_usd + usage — the capture step below extracts it.
           claude -p "/scan" \
             --model "${{ vars.SCAN_MODEL || 'claude-sonnet-4-6' }}" \
             --dangerously-skip-permissions \
+            --output-format stream-json \
             --verbose 2>&1 | tee /tmp/scan.log
-
-      - name: Capture token usage into run dir
-        run: |
-          # Greps only the already-teed scan log — never echoes secrets. Committed by the publish step.
-          # No mkdir: minting runs/$(date -u +%F) across UTC midnight creates a phantom empty dir
-          # that the health check's tail -1 would select, failing a healthy scan. Write into the
-          # newest EXISTING run dir; if none exists, skip — the health check reports that case.
-          latest=$(ls -d runs/*/ 2>/dev/null | sort | tail -1); [ -n "$latest" ] && grep -iE "tokens|cost|usage" /tmp/scan.log | tail -50 > "${latest%/}/usage.log" || true
 
       - name: Post-run health check (catch silent degradation)
         run: |
-          latest=$(ls -d runs/*/ 2>/dev/null | sort | tail -1)
-          if [ -z "$latest" ]; then
-            echo "::error::no run directory produced — scan did not run"; exit 1
+          # Expect TODAY's run dir specifically. Deriving --expect-date from the newest
+          # existing dir would let an exit-0 no-op scan re-validate the previous run and
+          # report HEALTHY. (Cron fires 14:00 UTC with a 30-min timeout, so a scan never
+          # crosses UTC midnight.)
+          TODAY=$(date -u +%F)
+          if [ ! -d "runs/$TODAY" ]; then
+            echo "::error::scan produced no runs/$TODAY directory — the model exited without running the pipeline. Check the scan log."; exit 1
           fi
-          python3 scripts/check_run_health.py --run-dir "${latest%/}" --expect-date "$(basename "$latest")"
+          python3 scripts/check_run_health.py --run-dir "runs/$TODAY" --expect-date "$TODAY"
+
+      - name: Capture cost + token usage into run dir
+        run: |
+          # The scan log's last {"type":"result"} line carries total_cost_usd + usage.
+          # Parse JSON properly (spacing-agnostic) rather than grepping a serialization.
+          # Runs after the health check so the dir is guaranteed; committed by the publish step.
+          python3 -c "
+          import json
+          last = {}
+          for ln in open('/tmp/scan.log', encoding='utf-8', errors='replace'):
+              ln = ln.strip()
+              if not ln.startswith('{'):
+                  continue
+              try:
+                  d = json.loads(ln)
+              except Exception:
+                  continue
+              if d.get('type') == 'result':
+                  last = d
+          keep = {k: last.get(k) for k in ('total_cost_usd', 'num_turns', 'duration_ms', 'usage', 'modelUsage')}
+          print(json.dumps(keep, indent=1))
+          " > "runs/$(date -u +%F)/usage.log" || true
 
       - name: Render HTML report
         run: python3 scripts/render_report.py
@@ -104,6 +125,27 @@ jobs:
           gh pr merge "$BRANCH" --squash --delete-branch \
             || gh pr merge "$BRANCH" --squash --delete-branch --auto \
             || echo "::warning::Scan PR left open — repo rules require manual merge. Merge promptly to keep scans linear."
+
+      - name: Post digest as GitHub Issue (zero-config delivery)
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_TOKEN || github.token }}
+        run: |
+          # Default delivery channel: needs no secret, and GitHub notifies the owner natively.
+          # Slack/email stay as optional upgrades; this guarantees a scan is never silent.
+          TODAY=$(date -u +%F)
+          [ -f "runs/$TODAY/digest.md" ] || { echo "no digest for $TODAY — skipping"; exit 0; }
+          TITLE="$(python3 -c "import json;b=json.load(open('config/brand.json'));print(b.get('product') or b.get('company') or 'Pulse')" 2>/dev/null || echo Pulse)"
+          # Supersede the previous digest issue so the open list is always exactly one deep.
+          for n in $(gh issue list --state open --search 'digest in:title' --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Superseded by the ${TODAY} digest." || true
+          done
+          {
+            cat "runs/$TODAY/digest.md"
+            echo; echo "---"
+            echo "[Digest history](https://github.com/${{ github.repository }}/blob/main/data/DIGEST.md) · [scan log](https://github.com/${{ github.repository }}/blob/main/data/SCANLOG.md) · close this issue once read."
+          } > /tmp/digest_issue.md
+          gh issue create --title "${TITLE} digest — ${TODAY}" --body-file /tmp/digest_issue.md \
+            || echo "::warning::digest issue creation failed (scan itself succeeded)"
 
       - name: Email report
         env:

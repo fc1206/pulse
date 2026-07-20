@@ -2,9 +2,9 @@
 
 [![tests](https://github.com/fc1206/pulse/actions/workflows/test.yml/badge.svg)](https://github.com/fc1206/pulse/actions/workflows/test.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> ### 🤖 New here? Tell **Claude Code**, **Codex**, or **Cowork** to *"clone https://github.com/fc1206/pulse and onboard me."*
-> Cloning a public repo needs no GitHub login and works on any surface. To keep your radar, click **"Use this template"** on GitHub first and clone *your* copy instead. The agent handles the rest in chat. The only thing you ever do by hand is paste an API key into a GitHub page, and only if you want autopilot.
-> *(Assistant says the repo is "private" or 404s? That's its GitHub connector, not the repo. Tell it to `clone` the URL.)*
+> ### 🤖 New here? Click **"Use this template"** above (choose **Private**), then tell **Claude Code**, **Codex**, or **Cowork** to *"clone <your new repo's URL> and onboard me."*
+> Your own copy first — a radar needs a repo you can push to, and your competitor list belongs in a private one. The agent handles the rest in chat; the only thing you ever do by hand is paste an API key into a GitHub page, and only if you want autopilot.
+> *(Just browsing? Cloning this public repo needs no GitHub login on any surface. Your private copy DOES need your GitHub login connected in the assistant — a "404" there means connect GitHub, not that the repo is broken.)*
 >
 > **Not technical?** Read **[USING-PULSE.md](USING-PULSE.md)**, the plain-English guide. Pulse is free. You pay only your own AI usage, about $5–15/mo on autopilot, nothing if you run it by hand.
 
@@ -14,7 +14,7 @@ _Built by the team at [Astell](https://www.astell.ai)._
 
 Not a one-shot "analyze my competitors" prompt. Pulse accumulates across runs, dedupes by domain, flags new entrants, funding, acquisitions, and pivots, and ends each scan with a short decision digest backed by an anti-slop validator. The model only does the narrow judgment (find and score). Deterministic Python does everything that touches the record, which is why it runs on any model.
 
-![The competitive map Pulse renders: 64 companies plotted by breadth and action, every position computed from registry scores, never hand-placed](docs/demo-map.png?v=3)
+![The competitive map Pulse renders: 76 companies plotted by breadth and action, every position computed from registry scores, never hand-placed](docs/demo-map.png?v=4)
 
 ## What a scan produces
 
@@ -39,11 +39,11 @@ Plus a self-contained `data/report.html` dashboard and a per-run audit trail in 
 - **One canonical writer.** Only the scripts write the system of record. Both `validate_merge.py` and `validate_digest.py` refuse to write unless they run on GitHub Actions or you pass `RADAR_ALLOW_WRITE=1` for an intentional, pull-first local run. Parallel runners can't silently diverge the registry.
 - **Every company needs a live evidence URL.** No URL, no entry.
 - **Anti-slop digest.** The validator rejects uncited claims, banned filler phrases, and lazy actions.
-- **Tested machinery.** `pip install -r requirements-dev.txt && pytest -q` (Python 3.10+).
+- **Tested machinery.** `pip install -r requirements-dev.txt && pytest -q` (Python 3.9+).
 
 ## Notes
 
 - Defaults (tiers, clusters, query blocks) are tuned for software and AI markets. Retarget yours by editing config only. Set your clusters in `config/clusters.json` and tune `config/rubric.md`, never Python or tests.
 - Cost is roughly the model plus web-search spend of two scans a week, typically $5–15 a month on the default model (a few dollars on a cheaper one, set via a `SCAN_MODEL` repo variable).
-- Requires Python 3.10+. Stock macOS ships 3.9, so install a current Python from python.org first.
+- Requires Python 3.9+ (stock macOS qualifies). macOS and Linux are the supported platforms; on Windows, run it under WSL — a native Windows checkout converts line endings and fails the byte-pinned test suite.
 - MIT licensed, provided as-is. A template to build on, not a supported product.

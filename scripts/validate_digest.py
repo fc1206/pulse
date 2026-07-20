@@ -102,6 +102,10 @@ def atomic_write(path: Path, text: str):
 
 def lint(entry: str, registry_domains: set, labels: tuple) -> list:
     errs = []
+    if not entry.strip():
+        # A truncated write or an empty model emission must lint, not traceback.
+        return ["digest.md is empty — write the digest per config/digest-spec.md "
+                "(0-2 items, or the NO ACTIONABLE SIGNAL sentinel)"]
     if not re.match(r"^## \d{4}-\d{2}-\d{2} — digest \(\w+\)\s*$", entry.splitlines()[0]):
         errs.append("first line must be '## YYYY-MM-DD — digest (runner)'")
     if len(entry) > MAX_CHARS:
@@ -205,7 +209,7 @@ def resolve_action(root: Path, rid: str, status: str, note: str):
                 row += " | note: " + " ".join(note.split()).replace("|", "/")
             lines[i] = row
             atomic_write(path, "\n".join(lines) + "\n")
-            print(f"ACTION {rid} → {status}")
+            print(f"ACTION {rid} -> {status}")
             return
     sys.exit(f"ERROR: unknown action id '{rid}' — see data/ACTIONS.md for valid ids")
 
