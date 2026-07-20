@@ -20,6 +20,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
+if sys.version_info < (3, 9):
+    sys.exit(f"ERROR: Python 3.9+ required (running {sys.version_info.major}.{sys.version_info.minor}) "
+             "— on older versions the merge dies mid-run with an unnamed AttributeError.")
+
 TIERS = {"1", "2", "3"}
 # The valid cluster set is MARKET-SPECIFIC and lives in config/clusters.json so a fork
 # retargets by editing config, never this code. This is only the fallback when that file
@@ -100,6 +104,10 @@ def validate_candidates(cands, known, clusters):
         for f in REQUIRED:
             if not str(c.get(f, "")).strip():
                 errs.append(f"{tag}: missing required field '{f}'")
+        for k, v in c.items():
+            if isinstance(v, str) and ("\n" in v or "\r" in v):
+                errs.append(f"{tag}: field '{k}' contains a line break — single-line values only "
+                            "(a newline here would forge extra lines in the changelog)")
         d = norm_domain(c.get("domain", ""))
         if not d or "." not in d or not d[0].isalnum():
             errs.append(f"{tag}: invalid domain '{c.get('domain')}'")
@@ -136,6 +144,8 @@ def validate_updates(ups, by_domain, clusters):
             if not isinstance(v, (str, int, float, bool)):
                 errs.append(f"{tag}: field '{k}' must be a scalar value, got {type(v).__name__}")
                 continue  # skip enum checks: `v not in clusters/STATUSES` would TypeError on a list/dict
+            if isinstance(v, str) and ("\n" in v or "\r" in v):
+                errs.append(f"{tag}: field '{k}' contains a line break — single-line values only")
             if k == "tier" and str(v) not in TIERS:
                 errs.append(f"{tag}: tier must be one of {sorted(TIERS)}")
             if k == "cluster" and v not in clusters:

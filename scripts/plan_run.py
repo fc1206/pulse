@@ -20,6 +20,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
+if sys.version_info < (3, 9):
+    sys.exit(f"ERROR: Python 3.9+ required (running {sys.version_info.major}.{sys.version_info.minor}) "
+             "— on older versions the pipeline dies mid-run with an unnamed AttributeError.")
+
 ALWAYS_BLOCK = "F"
 
 
@@ -42,6 +46,9 @@ def main():
     state = json.loads((root / "data/state.json").read_text(encoding="utf-8"))
     blocks = load_blocks(root / "config/queries.md")
     rotating = [b for b in blocks if b != ALWAYS_BLOCK]
+    if not rotating:
+        sys.exit(f"ERROR: config/queries.md has no rotating blocks — only the always-on Block "
+                 f"{ALWAYS_BLOCK}. Add at least one other '## Block X:' section.")
 
     if args.seed:
         emphasized = list(rotating)  # deep map: the whole battery in one pass

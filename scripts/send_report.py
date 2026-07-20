@@ -64,7 +64,7 @@ def main():
     with smtplib.SMTP_SSL(host, 465, context=ssl.create_default_context()) as s:
         s.login(user, pw)
         s.send_message(msg)
-    print(f"Sent '{subject}' → {to}")
+    print(f"Sent '{subject}' -> {to}")
 
 
 if __name__ == "__main__":

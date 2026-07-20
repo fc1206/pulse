@@ -8,6 +8,6 @@
 - Run one scan cycle → `.claude/commands/scan.md`
 
 ## Rules
-- The system of record (`data/registry.csv`, `data/SCANLOG.md`, `data/state.json`, `data/DIGEST.md`, the `data/LANDSCAPE.md` changelog) is written **only by the scripts** — never hand-edit it.
+- The system of record (`data/registry.csv`, `data/SCANLOG.md`, `data/state.json`, `data/DIGEST.md`, `data/ACTIONS.md`, the `data/LANDSCAPE.md` changelog) is written **only by the scripts** — never hand-edit it.
 - Full hard rules, output schemas, and key files: see `CLAUDE.md`.
 - The deliverable is `data/report.html` (rendered by `scripts/render_report.py`) — branded from `config/brand.json`.
